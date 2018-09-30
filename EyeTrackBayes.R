@@ -31,3 +31,5 @@ DataFra$Data.y[DataFra$fixation == 1] %>% density %>% plot
 DataFra$Data.x[DataFra$fixation == 4] %>% density %>% plot
 DataFra$Data.y[DataFra$fixation == 2] %>% density %>% plot
 
+
+

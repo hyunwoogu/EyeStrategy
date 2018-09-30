@@ -5,8 +5,8 @@ library(survival)
 library(survminer)
 
 ## Load the data
-h5ls("../Dropbox/2018Autumn/GradThesis/etdb_v1.0.hdf5")
-Data = h5read("../Dropbox/2018Autumn/GradThesis/etdb_v1.0.hdf5", "/Face Discrim.")
+h5ls("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5")
+Data = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Discrim.")
 
 ## Preprocessing
 DataFra = data.frame(Data$SUBJECTINDEX, Data$trial, Data$filenumber, Data$isref, Data$start, Data$end, Data$x, Data$y)
