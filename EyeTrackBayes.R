@@ -24,6 +24,8 @@ DataFra['fixation'] = Counts
 DataFraROI = DataFra[DataFra$fixation %in% c(1,2,3,5,7), ]
 
 
+
+
 ## Bayesian updating : any ideas?
 DataFra$Data.x[DataFra$fixation == 1] %>% density %>% plot
 DataFra$Data.y[DataFra$fixation == 1] %>% density %>% plot

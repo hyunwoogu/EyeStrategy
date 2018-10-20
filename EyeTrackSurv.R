@@ -26,10 +26,34 @@ for (i in 2:dim(DataFra)[1])
 DataFra['fixation'] = Counts
 DataFraROI = DataFra[DataFra$fixation %in% c(1,2,3,5,7), ]
 
+
+##
+names(DataFra)
+ROI = c("Data.start", "Data.end", "Data.x", 
+        "Data.y", "fixation")
+Region1 = c(520, 390)
+Region2 = c(720, 540)
+winSize = 150
+
+DataFra = DataFra[, ROI] %>% 
+  filter(fixation == 1) %>%
+  mutate(Duration = Data.end - Data.start,
+         Hemifield = ifelse(Data.x <= 800, "L", "R"),
+         UpperLower = ifelse(Data.y <= 500, "U", "L"),
+         Region = ifelse(Data.x >= Region1[1] & Data.x <= Region1[1] + winSize &
+                        Data.y >= Region1[2] & Data.y >= Region1[2] + winSize, "Eye",
+                        ifelse(Data.x >= Region2[1] & Data.x <= Region2[1] + winSize &
+                                 Data.y >= Region2[2] & Data.y >= Region2[2] + winSize, "Nose", "Else")),
+         Censor = Data.end < 1450)
+
+
 ## Survival analysis
-Data_surv = Surv(time = DataFraROI$Duration, event = DataFraROI$Censor)
+Data_surv = Surv(time = DataFra$Duration, 
+                 event = DataFra$Censor)
 
-Fit = survfit(Data_surv ~ fixation, data = DataFraROI)
+Fit = survfit(Data_surv ~ Region, data = DataFra)
 summary(Fit)
-ggsurvplot(Fit, data = DataFraROI, pval = TRUE)
+ggsurvplot(Fit, data = DataFra, pval = TRUE)
 
+
+plot(Fit, fun="cloglog")
