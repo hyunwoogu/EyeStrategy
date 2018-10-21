@@ -50,7 +50,8 @@ DataFra = DataFra[, ROI] %>%
 ## Survival analysis
 Data_surv = Surv(time = DataFra$Duration, 
                  event = DataFra$Censor)
-
+summary(Fit)
+?survfit
 Fit = survfit(Data_surv ~ Region, data = DataFra)
 summary(Fit)
 ggsurvplot(Fit, data = DataFra, pval = TRUE)
