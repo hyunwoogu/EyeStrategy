@@ -50,11 +50,26 @@ DataFra = DataFra[, ROI] %>%
 ## Survival analysis
 Data_surv = Surv(time = DataFra$Duration, 
                  event = DataFra$Censor)
-summary(Fit)
-?survfit
+
 Fit = survfit(Data_surv ~ Region, data = DataFra)
 summary(Fit)
 ggsurvplot(Fit, data = DataFra, pval = TRUE)
 
 
 plot(Fit, fun="cloglog")
+
+
+## 
+
+## 
+
+Sam = c(3,4,5,7,8,9,10)
+Cen = c(1,0,1,1,0,0,1)
+Suvv = Surv(time = Sam, event=Cen)
+SuvvFit = survfit(Suvv ~ 1, Suvv) 
+summary(SuvvFit)
+SuvvFit$time
+
+cumsum(SuvvFit$n.event/SuvvFit$n.risk)
+
+(1-1/7 ) * (4/5)
