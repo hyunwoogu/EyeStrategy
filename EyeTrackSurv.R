@@ -9,51 +9,84 @@ h5ls("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5")
 Data = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Discrim.")
 
 ## Preprocessing
-DataFra = data.frame(Data$SUBJECTINDEX, Data$trial, Data$filenumber, Data$isref, Data$start, Data$end, Data$x, Data$y)
-DataFra = DataFra %>% mutate(Duration = Data.end - Data.start)
-DataFra$Censor = (DataFra$Duration < 1500)
+DataFra = data.frame(SUBJECTINDEX=Data$SUBJECTINDEX, 
+                     trial = Data$trial, 
+                     filenumber = Data$filenumber,
+                     start = Data$start, 
+                     end = Data$end, 
+                     x = Data$x, 
+                     y = Data$y)
+DataFra = DataFra %>% mutate(Duration = end - start)
+DataFra = data.frame(DataFra, count=ave(rep(1,length(DataFra$trial)),
+                                        DataFra$SUBJECTINDEX,
+                                        DataFra$trial,
+                                        FUN = cumsum))
 
-## mutate a variable 'counts'
-Counts = c(1)
-j = 1
-for (i in 2:dim(DataFra)[1])
-{
-  if (all(DataFra[i-1, 1:2] == DataFra[i, 1:2])) {j = j+ 1
-  }else {j = 1}
-  Counts = c(Counts, j)
-}
+DataFra[DataFra$count == 1 & DataFra$end > 1400, ]
 
-DataFra['fixation'] = Counts
-DataFraROI = DataFra[DataFra$fixation %in% c(1,2,3,5,7), ]
+##
+DataFraFirst = DataFra[DataFra$count == 1,]
+DataFraFirst = DataFraFirst %>% mutate(Cen = (end > 1450))
+
+##
+DataFra[DataFra$count == 1 & DataFra$end > 1450, 'Duration'] %>% density %>% plot
+DataFra[count == 1, 'start'] %>% mean(na.rm=T)
 
 
 ##
-names(DataFra)
+names(DataFraFirst)
 ROI = c("Data.start", "Data.end", "Data.x", 
         "Data.y", "fixation")
-Region1 = c(520, 390)
-Region2 = c(720, 540)
-winSize = 150
+Region1 = c(550, 410)
+Region2 = c(550, 570)
+XwinSize = 500
+YwinSize = 150
 
-DataFra = DataFra[, ROI] %>% 
-  filter(fixation == 1) %>%
-  mutate(Duration = Data.end - Data.start,
-         Hemifield = ifelse(Data.x <= 800, "L", "R"),
-         UpperLower = ifelse(Data.y <= 500, "U", "L"),
-         Region = ifelse(Data.x >= Region1[1] & Data.x <= Region1[1] + winSize &
-                        Data.y >= Region1[2] & Data.y >= Region1[2] + winSize, "Eye",
-                        ifelse(Data.x >= Region2[1] & Data.x <= Region2[1] + winSize &
-                                 Data.y >= Region2[2] & Data.y >= Region2[2] + winSize, "Nose", "Else")),
-         Censor = Data.end < 1450)
+DataFraFirst = DataFraFirst %>% 
+  mutate(Region = ifelse(DataFraFirst$x >= Region1[1] & DataFraFirst$x <= Region1[1] + XwinSize &
+                         DataFraFirst$y >= Region1[2] & DataFraFirst$y <= Region1[2] + YwinSize, "Eye",
+                         ifelse(DataFraFirst$x >= Region2[1] & DataFraFirst$x <= Region2[1] + XwinSize &
+                                DataFraFirst$y >= Region2[2] & DataFraFirst$y <= Region2[2] + YwinSize, "Mouth", "Else")))
 
+plot(density(DataFraFirst$y))
+
+DataFraFirst$Region %>% table
+
+data(kidney)
+kidney #str, dim check
+survobj.kidney = Surv(time = kidney$time, event = kidney$delta) ;
+survobj.kidney;
+
+DataFraFirst$Region %>% table
+
+DataFraFirst_ROI = DataFraFirst %>%
+  dplyr::filter(Region != "Else")
+
+res = NULL
+
+for (i in seq(-1,1,by=.05))
+{
+  A = survdiff(Data_surv ~ DataFraFirst_ROI$Region, rho=i)
+  res = c(res, 1 - pchisq(A$chisq, length(A$n) - 1))
+}
+
+plot(seq(-1,1,by=.05), res)
+
+DataFraFirst_ROI = DataFraFirst %>%
+  dplyr::filter(Region != "Else")
 
 ## Survival analysis
-Data_surv = Surv(time = DataFra$Duration, 
-                 event = DataFra$Censor)
 
-Fit = survfit(Data_surv ~ Region, data = DataFra)
+DataFraFirst_ROI = DataFraFirst %>%
+  dplyr::filter(Region != "Else")
+
+
+Data_surv = Surv(time = DataFraFirst_ROI$Duration, 
+                 event = DataFraFirst_ROI$UnCen)
+
+Fit = survfit(Data_surv ~ Region, data = DataFraFirst_ROI)
 summary(Fit)
-ggsurvplot(Fit, data = DataFra, pval = TRUE)
+ggsurvplot(Fit, data = DataFraFirst_ROI, pval = TRUE)
 
 
 plot(Fit, fun="cloglog")
