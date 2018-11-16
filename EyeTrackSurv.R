@@ -11,6 +11,28 @@ library(muhaz)
 h5ls("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5")
 Data = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Discrim.")
 
+AnaData = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Learning")
+AnaDataFra = data.frame(SUBJECTINDEX=AnaData$SUBJECTINDEX[1,], 
+                        trial = AnaData$trial[1,], 
+                        filenumber = AnaData$filenumber[1,], 
+                        start = AnaData$start[1,], 
+                        end = AnaData$end[1,], 
+                        x = AnaData$x[1,], 
+                        y = AnaData$y[1,],
+                        oddball = AnaData$oddball[1,],
+                        ucs = AnaData$ucs[1,])
+
+AnaDataFra = AnaDataFra %>% mutate(Duration = end - start)
+AnaDataFra = data.frame(AnaDataFra, count=ave(rep(1,length(AnaDataFra$trial)),
+                                              AnaDataFra$SUBJECTINDEX,
+                                              AnaDataFra$trial,
+                                              FUN = cumsum))
+
+AnaDataFraFirst = AnaDataFra[AnaDataFra$count == 1,]
+AnaDataFraFirst = AnaDataFraFirst %>% mutate(UnCen = (end < 1450))
+
+
+
 # Preprocessing
 DataFra = data.frame(SUBJECTINDEX=Data$SUBJECTINDEX, 
                      trial = Data$trial, 
@@ -27,6 +49,7 @@ DataFra = data.frame(DataFra, count=ave(rep(1,length(DataFra$trial)),
 
 DataFra[DataFra$count == 1 & DataFra$end > 1400, ]
 
+glm(AnaData)
 
 ## First Fixations
 DataFra[DataFra$count == 1 & DataFra$end > 1450, 'Duration'] %>% density %>% plot
@@ -60,10 +83,107 @@ DataFraFirst = DataFraFirst %>%
                                 ifelse(DataFraFirst$x >= Region3[1] & DataFraFirst$x <= Region3[1] + XwinSize &
                                        DataFraFirst$y >= Region3[2] & DataFraFirst$y <= Region3[2] + YwinSize, "Nose",
                                        ifelse(DataFraFirst$x >= Region4[1] & DataFraFirst$x <= Region4[1] + XwinSize &
-                                                DataFraFirst$y >= Region4[2] & DataFraFirst$y <= Region4[2] + YwinSize, "Mouth", "Else")))))
+                                                DataFraFirst$y >= Region4[2] & DataFraFirst$y <= Region4[2] + YwinSize, "Else", "Else")))))
 
+## 
 DataFraFirst$Region %>% table
-DataFraFirst = DataFraFirst[DataFraFirst$Region!='Else',]
+Part_surv = Surv(time = DataFraFirst$Duration, 
+                 event = DataFraFirst$UnCen)
+
+Fit = survfit(Part_surv ~ Region, data = DataFraFirst)
+ggsurvplot(Fit, data = DataFraFirst, pval = TRUE)
+
+
+Data_i = DataFraFirst[DataFraFirst$SUBJECTINDEX==(i+5),]
+Data_i$Region %>% table
+Part_surv_i = Surv(time = Data_i$Duration, 
+                   event = Data_i$UnCen)
+
+Fit_i = survfit(Part_surv_i ~ Region, data = Data_i)
+ggsurvplot(Fit_i, data = Data_i, pval = TRUE)
+
+i = i + 1
+
+DataFraFirst$SUBJECTINDEX %>% table
+
+## X not perp C but X perp C when conditioning on participants
+
+##
+
+##
+DataFraFirst %>% group_by(SUBJECTINDEX, Region) %>%
+  summarise(cnt = n(),
+            medDur = median(Duration),
+            meanDur = mean(Duration),
+            sdDur = sd(Duration),
+            numCen = sum(UnCen==0)
+            ) %>% print(n=29)
+
+
+##
+Part_surv = Surv(time = DataFraFirst[DataFraFirst$SUBJECTINDEX==6,]$Duration, 
+                 event = DataFraFirst[DataFraFirst$SUBJECTINDEX==6,]$UnCen)
+
+Fit = survfit(Part_surv ~ Region, data = DataFraFirst[DataFraFirst$SUBJECTINDEX==6,])
+ggsurvplot(Fit, data = DataFraFirst[DataFraFirst$SUBJECTINDEX==6,], pval = TRUE)
+
+splots = list()
+
+for (i in 1:29)
+{
+  Data_i = DataFraFirst[DataFraFirst$SUBJECTINDEX==(i+5),]
+  Part_surv = Surv(time = Data_i$Duration, 
+                   event = Data_i$UnCen)
+  
+  Fit = survfit(Part_surv ~ Region, data = Data_i)
+  splots[[i]] = ggsurvplot(Fit, data = Data_i, 
+                           pval = TRUE)
+}
+
+arrange_ggsurvplots(splots, print = TRUE,
+                    ncol = 6, nrow = 5)
+
+
+summary(Fit)
+
+DataFraFirst %>% group_by(SUBJECTINDEX) %>%
+  ggsurvplot(Fit, pval = TRUE) + facet_wrap(~SUBJECTINDEX, scales = 'free_x')
+  
+boxplot(NUMS ~ GRP, data = ddf, lwd = 2, ylab = 'NUMS')
+stripchart(NUMS ~ GRP, vertical = TRUE, data = ddf, 
+           method = "jitter", add = TRUE, pch = 20, col = 'blue') 
+
+
+meanDur = DataFraFirst %>% group_by(SUBJECTINDEX) %>%
+  summarise(meanDur = mean(Duration)) %>% 
+  arrange(meanDur) %>% pull(SUBJECTINDEX)
+
+DataFraFirst = DataFraFirst %>%
+  mutate(mDur = ifelse(SUBJECTINDEX %in% meanDur[1:14], "short", "long"))
+
+DataFraFirst = DataFraFirst %>%
+  mutate(Ord = which(SUBJECTINDEX == meanDur))
+
+DataFraFirst$Ord = sapply(DataFraFirst$SUBJECTINDEX, function(x){which(x == meanDur)})
+
+DataFraFirst$Ord %>% table
+which(6 == meanDur)
+
+
+qplot(Region, Duration, col = Ord,
+      data=DataFraFirst, geom=c("boxplot")) +
+  geom_point(alpha = 0.2) + 
+  geom_jitter(shape=16, position=position_jitter(0.2)) + 
+  theme_classic()
+
+p + geom_jitter(shape=16, position=position_jitter(0.2))
+
+
+
+
+pm_select %>% gather() %>% ggplot(aes(value))+
+  geom_histogram(bins=15) + facet_wrap(~key, scales = 'free_x') +
+  ggtitle("Histogram of continuous variables")
 
 ##
 Region_surv = Surv(time = DataFraFirst$Duration, 
@@ -300,4 +420,13 @@ cumsum(SuvvFit$n.event/SuvvFit$n.risk)
 
 ##
 
+##
+fit<- survfit(Surv(time, status) ~ sex, data = lung)
+
+# List of ggsurvplots
+require("survminer")
+
+# Arrange multiple ggsurvplots and print the output
+arrange_ggsurvplots(splots, print = TRUE,
+                    ncol = 2, nrow = 1, risk.table.height = 0.4)
 
