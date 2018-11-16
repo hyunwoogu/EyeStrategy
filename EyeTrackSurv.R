@@ -48,7 +48,7 @@ ggsurvplot(Fit, data = DataFraFirst, pval = TRUE)
 Region1 = c(560, 420)
 Region2 = c(850, 420)
 Region3 = c(720, 590)
-Region4 = c(720, 700)
+Region4 = c(720, 740)
 XwinSize = 150
 YwinSize = 150
 
@@ -63,7 +63,7 @@ DataFraFirst = DataFraFirst %>%
                                                 DataFraFirst$y >= Region4[2] & DataFraFirst$y <= Region4[2] + YwinSize, "Mouth", "Else")))))
 
 DataFraFirst$Region %>% table
-DataFraFirst
+DataFraFirst = DataFraFirst[DataFraFirst$Region!='Else',]
 
 ##
 Region_surv = Surv(time = DataFraFirst$Duration, 
@@ -109,6 +109,9 @@ DataEyeL_kernel = with(DataNose,
                               delta=UnCen, 
                               kern="epanechnikov", bw.grid=100))
 plot( DataEyeL_kernel,  xlim=c(-10,1500), main='hazard')
+
+##
+
 
 
 ##
@@ -159,6 +162,9 @@ CumHazEyeL <- cumsum(hzd_est_EyeL)*11.67
 
 plot(DataEyeL_kernel$est.grid, hzd_est_EyeL, 
      main='hazard estimates via kernel', type='l')
+
+
+
 
 ##
 
