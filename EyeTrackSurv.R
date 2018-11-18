@@ -106,9 +106,87 @@ i = i + 1
 
 DataFraFirst$SUBJECTINDEX %>% table
 
+##
+
+DataFraFirst = data.frame(DataFraFirst, 
+                      faceCNT=ave(rep(1,length(DataFraFirst$SUBJECTINDEX)),
+                                  DataFraFirst$SUBJECTINDEX,
+                                  DataFraFirst$filenumber,
+                                  FUN = cumsum))
+
+
+###
+
+ggplot(DataFraFirst, aes(x=faceCNT, y=Duration, color=factor(SUBJECTINDEX))) +
+  geom_point() +
+  theme_classic()
+
+DataFraFirst %>% 
+
+DataFraFirst %>% filter(SUBJECTINDEX==6) %>% dplyr::select(filenumber) %>% table
+
+DataFraFirst %>% 
+
+DataFraFirst %>% filter(SUBJECTINDEX==6) %>%
+  dplyr::select(filenumber)
+
+fct_lump(DataFraFirst$filenumber) %>% levels; fct_lump(gss_cat$relig, n=5) %>% levels;
+
+###
+
+
+###
+DataFraFirst
+
+
+
 ## X not perp C but X perp C when conditioning on participants
 
 ##
+
+library(muhaz)
+kernFitwhole =
+  with(DataFraFirst, muhaz(times=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
+
+plot(kernFitwhole, xlim=c(-10,1500), ylim=c(-0.001, 0.01), main='hazard')
+
+
+
+plot( with(DataFraFirst, muhaz(times=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100)),
+      xlim=c(-10,1500), ylim=c(-0.001, 0.04), main='hazard')
+
+for (i in 2:29)
+{
+  Data_i = DataFraFirst[DataFraFirst$SUBJECTINDEX==(i+5),]
+  lines(with(Data_i, muhaz(times=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100)), 
+        col=i)
+}
+
+
+dataAFT = with(DataFraFirst, Surv(time=Duration, event=UnCen, type="right"))
+RegAFTwei = survreg(dataAFT ~ 1 + Region + Duration, 
+                    dist="loglogistic", data = DataFraFirst)
+summary(RegAFTwei)
+
+
+my.fit = survfit(dataAFT~1);
+my.fit.summ = summary(my.fit)
+obs.time = my.fit.summ$time ; # t_i
+n.risk = my.fit.summ$n.risk ; # Y_i
+n.event = my.fit.summ$n.event ; # d_i
+KM.surv = my.fit.summ$surv ;    #\hat{S}(t_i)
+incr = n.event / n.risk ; # d_i / y_i
+NA.cumhzd = NULL ; # initialize
+for (i in 1:length(obs.time)) NA.cumhzd[i] = sum(incr[1:i]) ;
+
+log.time=log(obs.time); H=NA.cumhzd;
+plot(log.time, log(exp(H)-1), type="l", lty=1, main="Is log-logistic?", col="Blue");
+abline(coef(lm(log(exp(H)-1)~log.time)), col="red")
+
+
+plot(log.time,log(H),type="l",lty=1,main="Is Weibull?", col ="Blue" ) ;
+abline(coef(lm(log(H)~log.time)), col="red")
+
 
 ##
 DataFraFirst %>% group_by(SUBJECTINDEX, Region) %>%
