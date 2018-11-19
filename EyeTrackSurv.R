@@ -11,6 +11,10 @@ library(muhaz)
 h5ls("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5")
 Data = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Discrim.")
 
+
+AnaDataFra %>% filter(SUBJECTINDEX %in% unique(DataFra$SUBJECTINDEX))
+  
+
 AnaData = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Learning")
 AnaDataFra = data.frame(SUBJECTINDEX=AnaData$SUBJECTINDEX[1,], 
                         trial = AnaData$trial[1,], 
@@ -84,6 +88,38 @@ DataFraFirst = DataFraFirst %>%
                                        DataFraFirst$y >= Region3[2] & DataFraFirst$y <= Region3[2] + YwinSize, "Nose",
                                        ifelse(DataFraFirst$x >= Region4[1] & DataFraFirst$x <= Region4[1] + XwinSize &
                                                 DataFraFirst$y >= Region4[2] & DataFraFirst$y <= Region4[2] + YwinSize, "Else", "Else")))))
+
+##
+refPoint = c(800, 600)
+DataFraFirst$DistFromCent = sqrt((DataFraFirst$x - refPoint[1])^2 + (DataFraFirst$y - refPoint[2])^2)
+
+ggplot(DataFraFirst, aes(DistFromCent, Duration)) +
+  geom_point() +
+  xlim(0, 1000) +
+  theme_classic()
+
+facet_grid(SUBJECTINDEX ~ .) +
+
+
+Dist_surv = Surv(time = DataFraFirst$Duration, 
+                 event = DataFraFirst$UnCen)
+
+Fit = survfit(Dist_surv ~ DistFromCent, data = DataFraFirst)
+ggsurvplot(Fit, data = DataFraFirst, pval = TRUE)
+
+
+distAFT = with(DataFraFirst, Dist_surv)
+RegAFTdistWei = survreg(distAFT ~ 1 + DistFromCent, 
+                    dist="weibull", data = DataFraFirst)
+summary(RegAFTdistWei)
+
+Part_surv = Surv(time = DataFraFirst$Duration, 
+                 event = DataFraFirst$UnCen)
+
+Fit = survfit(Part_surv ~ Region, data = DataFraFirst)
+ggsurvplot(Fit, data = DataFraFirst, pval = TRUE)
+
+
 
 ## 
 DataFraFirst$Region %>% table
@@ -161,6 +197,7 @@ for (i in 2:29)
   lines(with(Data_i, muhaz(times=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100)), 
         col=i)
 }
+
 
 
 dataAFT = with(DataFraFirst, Surv(time=Duration, event=UnCen, type="right"))
