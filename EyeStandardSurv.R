@@ -203,8 +203,71 @@ legend("topright", col=c("red", "blue"), lty=c(1, 1),
        c("K-M estimator", "exp(-{N-A esetimator})")) ; 
 
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Facet ggsurvplot() output by
+# a combination of factors
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+# Fit (complexe) survival curves
+#++++++++++++++++++++++++++++++++++++
+require("survival")
+fit3 <- survfit( Surv(time, status) ~ sex + rx + adhere,
+                 data = colon )
+
+# Visualize: plot survival curves by sex and facet by rx and adhere
+#++++++++++++++++++++++++++++++++++++
+ggsurv <- ggsurvplot(fit3, fun = "cumhaz", conf.int = TRUE)
+ggsurv$plot +theme_bw() + facet_grid(rx ~ adhere)
+
+fit
+ggsurvplot(my_fit, my_surv, facet.by = SUBJECTINDEX, 
+           palette = "jco", pval = TRUE)
+
+
+require("survival")
+library("survminer")
+fit2 <- survfit( my_surv ~ Region + SUBJECTINDEX, data = DataFraFirst )
+ggsurv <- ggsurvplot(fit2, conf.int = TRUE)
+
+ggsurv$plot + theme_bw() + facet_wrap(~ SUBJECTINDEX)
+
+surv_summary(fit2)
+
+ggsurvplot()
 
 # Comparing two estimates 
+
+# Fit (complexe) survival curves
+#++++++++++++++++++++++++++++++++++++
+
+require("survival")
+fit3 <- survfit( Surv(time, status) ~ sex + rx + adhere,
+                 data = colon )
+
+# Visualize: plot survival curves by sex and facet by rx and adhere
+#++++++++++++++++++++++++++++++++++++
+ggsurv <- ggsurvplot(fit3, fun = "cumhaz", conf.int = TRUE)
+ggsurv$plot +theme_bw() + facet_grid(rx ~ adhere)
+
+require("survival")
+fit <- survfit( Surv(time, status) ~ sex + rx + adhere,
+                data = colon )
+devtools::install_github("kassambara/survminer")
+
+if(!require(devtools)) install.packages("devtools")
+devtools::install_github("kassambara/survminer", build_vignettes = FALSE)
+
+
+# Visualize
+#++++++++++++++++++++++++++++++++++++
+require("survminer")
+
+ggsurv <- ggsurvplot(fit3, fun = "cumhaz", conf.int = TRUE,
+                     risk.table = TRUE, risk.table.col="strata",
+                     ggtheme = theme_bw())
+# Faceting survival curves
+curv_facet <- ggsurv$plot + facet_grid(rx ~ adhere)
+curv_facet
 
 
 # Log-Rank test 
