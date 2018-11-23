@@ -12,6 +12,8 @@ h5ls("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5")
 Data = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Discrim.")
 
 
+## 
+
 AnaDataFra %>% filter(SUBJECTINDEX %in% unique(DataFra$SUBJECTINDEX))
   
 
@@ -233,6 +235,11 @@ DataFraFirst %>% group_by(SUBJECTINDEX, Region) %>%
             sdDur = sd(Duration),
             numCen = sum(UnCen==0)
             ) %>% print(n=29)
+
+##
+test_kidney = survdiff(survobj_kidney ~ as.factor(kidney$type), rho=0)
+test_kidney = survdiff(survobj_kidney ~ kidney$type, rho=0) ;
+test_kidney = survdiff(survobj_kidney ~ type, rho=0, data=kidney) ;
 
 
 ##
