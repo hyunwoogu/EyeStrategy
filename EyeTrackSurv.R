@@ -7,9 +7,16 @@ library(coxme)
 library(KMsurv)
 library(muhaz)
 
+# Exploratory Data Analysis
+
+#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---
+
 # Load the data
 h5ls("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5")
 Data = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Discrim.")
+
+DataFraFirst$SUBJECTINDEX %>% unique
+
 
 
 ## 
@@ -144,6 +151,8 @@ i = i + 1
 
 DataFraFirst$SUBJECTINDEX %>% table
 
+
+
 ##
 
 DataFraFirst = data.frame(DataFraFirst, 
@@ -236,7 +245,9 @@ DataFraFirst %>% group_by(SUBJECTINDEX, Region) %>%
             numCen = sum(UnCen==0)
             ) %>% print(n=29)
 
-##
+
+## Two-sample testing
+
 test_kidney = survdiff(survobj_kidney ~ as.factor(kidney$type), rho=0)
 test_kidney = survdiff(survobj_kidney ~ kidney$type, rho=0) ;
 test_kidney = survdiff(survobj_kidney ~ type, rho=0, data=kidney) ;
@@ -552,3 +563,32 @@ require("survminer")
 arrange_ggsurvplots(splots, print = TRUE,
                     ncol = 2, nrow = 1, risk.table.height = 0.4)
 
+
+
+
+# Load the data
+h5ls("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5")
+Data = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Discrim.")
+
+
+
+## Another Dataset Analysis (Do Not Run : Not applicable)
+AnaDataFra %>% filter(SUBJECTINDEX %in% unique(DataFra$SUBJECTINDEX))
+
+AnaData = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Learning")
+AnaDataFra = data.frame(SUBJECTINDEX=AnaData$SUBJECTINDEX[1,], 
+                        trial = AnaData$trial[1,], 
+                        filenumber = AnaData$filenumber[1,], 
+                        start = AnaData$start[1,], 
+                        end = AnaData$end[1,], 
+                        x = AnaData$x[1,], 
+                        y = AnaData$y[1,],
+                        oddball = AnaData$oddball[1,],
+                        ucs = AnaData$ucs[1,])
+
+A = AnaDataFra %>% filter(SUBJECTINDEX %in% unique(DataFra$SUBJECTINDEX))  %>%
+  group_by(SUBJECTINDEX) %>% summarise(meanDuration = mean(Duration)) %>% pull(meanDuration)
+
+B = DataFra %>% group_by(SUBJECTINDEX) %>% summarise(meanDuration = mean(Duration)) %>% pull(meanDuration)
+
+plot(A, B) # Different Participants! -> thus not applicable! :(
