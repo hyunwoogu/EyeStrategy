@@ -7,9 +7,281 @@ library(coxme)
 library(KMsurv)
 library(muhaz)
 
+
+ggsurvplot(fit=my_fit_i, data=DataFraFirst_i)
+DataFraFirst_i %>% group_by(SUBJECTINDEX) %>% summarise(NumCen = sum(UnCen!=1))
+
+
+# Censoring : just the table?
+
+#++++++++++++++++++++++++
+# Survival plot by participants
+survPlotMaker = function(i)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+  my_surv_i = Surv(time=DataFraFirst_i$Duration,
+                   event=DataFraFirst_i$UnCen)
+  my_fit_i  = survfit(formula = my_surv_i ~ 1, data=my_surv_i)
+  my_fit_summ_i = summary(my_fit_i)
+  obs_time = my_fit_summ_i$time  # t_i
+  n_risk   = my_fit_summ_i$n.risk # Y_i
+  n_event = my_fit_summ_i$n.event # d_i
+  KM_surv = my_fit_summ_i$surv   #\hat{S}(t_i)
+  
+  incr = n_event / n_risk  # d_i / y_i
+  NA_cumhzd = NULL  # initialize
+  for (j in 1:length(obs_time)) NA_cumhzd[j] = sum(incr[1:j])
+  NA_surv = exp(-NA_cumhzd)
+  
+  incr_GW = n_event / n_risk / (n_risk - n_event)
+  var_GW = NULL
+  for (i in 1:length(obs_time)) var_GW[i] = sum(incr_GW[1:i])
+  incr_NA = n_event / n_risk^2
+  var_NA = NULL
+  for (i in 1:length(obs_time)) var_NA[i] = sum(incr_NA[1:i])
+  
+  gamma = qnorm(0.975)
+  std_NA = sqrt(var_NA)
+  up_NA = exp(- NA_cumhzd + gamma*std_NA)
+  lo_NA = exp(- NA_cumhzd - gamma*std_NA)
+  
+  stderr_GW = KM_surv * sqrt(var_GW)
+  up_GW = KM_surv + gamma*stderr_GW
+  lo_GW = KM_surv - gamma*stderr_GW
+  
+  res = data.frame(Subject = sprintf("Subject%02d", indx),
+                    obsTimes = obs_time,
+                    Nrisk = n_risk,
+                    Nevent = n_event,
+                    KMsv = KM_surv,
+                    NAsv = NA_surv,
+                    upNA = up_NA,
+                    loNA = lo_NA,
+                    upGW = up_GW,
+                    loGW = lo_GW)
+  
+  return(res)
+}
+
+SurvData = NULL
+
+indx = 0
+for (i in unique(DataFraFirst$SUBJECTINDEX))
+{
+  indx = indx + 1
+  SurvData = rbind(SurvData, survPlotMaker(i))
+}
+
+ggplot(data=SurvData, aes(x=obsTimes)) + 
+  geom_step(aes(y=KMsv), linetype=1,color='red',alpha=0.5) + 
+  geom_ribbon(aes(ymin=loGW, ymax=upGW), alpha=0.2, fill='red') +
+  geom_step(aes(y=NAsv), linetype=1,color='blue',alpha=0.5) +
+  geom_ribbon(aes(ymin=loNA, ymax=upNA), alpha=0.2, fill='blue') +
+  facet_wrap(.~Subject) + 
+  ylab('Prob?') + xlab('time') +  
+  theme_light()
+
+
+
+#++++++++++++++++++++++++
+# Hypothesis test by participants : Different from the reference == Else
+
+DataFraFirst_i
+DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+my_surv_i = Surv(time=DataFraFirst_i$Duration,
+                 event=DataFraFirst_i$UnCen)
+
+testSurv_i = survdiff(my_surv_i ~ DataFraFirst_i$Region, rho=0) ;
+testSurv_i$chisq
+
+1 - pchisq(testSurv_i$chisq, length(testSurv_i$n) - 1)
+
+
+indx = 0
+p.s = NULL
+chisq.s = NULL
+
+for (i in unique(DataFraFirst$SUBJECTINDEX))
+{
+  indx = indx + 1
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+  my_surv_i = Surv(time=DataFraFirst_i$Duration,
+                   event=DataFraFirst_i$UnCen)
+  
+  testSurv_i = survdiff(my_surv_i ~ DataFraFirst_i$Region, rho=0) ;
+  p.s = c(p.s, 1 - pchisq(testSurv_i$chisq, length(testSurv_i$n) - 1))
+  chisq.s = c(chisq.s, testSurv_i$chisq)
+}
+
+## different scale needed...
+test = data.frame(Subject = 1:29,
+                  p.values = p.s,
+                  Wald.chisq = chisq.s)
+
+ggplot(test, aes(x = Subject)) +
+  geom_point(aes(y = Wald.chisq, colour = "chi-squared")) +
+  geom_point(aes(y = p.values, colour = "p-value")) +
+  scale_y_continuous(sec.axis = sec_axis(~.*.00001, name = "p-value")) +
+  scale_colour_manual(values = c("blue", "red")) +
+  labs(y = "chi-squared",
+       x = "Subject",
+       colour = "Parameter") +
+  theme(legend.position = c(0.8, 0.9)) + 
+  theme_light()
+
+
+
+#++++++++++++++++++++++++
+# Hazard plot by participants
+
+DataFraFirst_i
+KF_i = muhaz(times=DataFraFirst_i$Duration, 
+             delta=DataFraFirst_i$UnCen, kern="epanechnikov", bw.grid=100)
+plot(KF_i)
+
+lines(KF_i$est.grid, KF_i$haz.est)
+kernel_fit_bmt1 <- with(bmt1, muhaz(times=t2, delta=d3, kern="epanechnikov", bw.grid=100))
+plot( with(bmt1, muhaz(times=t2, delta=d3, kern="epanechnikov", bw.grid=100)) , xlim=c(-10,1000), ylim=c(-0.001, 0.005), main='hazard')
+
+hzd_est_bmt1 <- kernel_fit_bmt1$haz.est
+cumulative_hzd_est_bmt1 <- cumsum(hzd_est_bmt1)*11.67
+
+plot( kernel_fit_bmt1$est.grid, hzd_est_bmt1 , xlim=c(-10,1000), ylim=c(-0.001, 0.005), main='hazard estimates via kernel', type='l')
+
+plot( with(bmt1, muhaz(times=t2, delta=d3, kern="epanechnikov", bw.grid=100)) , xlim=c(-10,650), ylim=c(-0.001, 0.005), main='hazard')
+lines( with(bmt2, muhaz(times=t2, delta=d3, kern="epanechnikov", bw.grid=100)), col="blue" )
+lines( with(bmt3, muhaz(times=t2, delta=d3, kern="epanechnikov", bw.grid=100)), col="red" )
+
+DataFraFirst$Region %>% unique
+
+DataFraFirst_i_Nose = DataFraFirst_i %>% filter(Region == "Nose")
+DataFraFirst_i_EyeL = DataFraFirst_i %>% filter(Region == "EyeL")
+DataFraFirst_i_EyeR = DataFraFirst_i %>% filter(Region == "EyeR")
+
+
+
+hazardPlotMaker = function(i)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+  haz_i = with(DataFraFirst_i,
+               muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
+
+  res = data.frame(Subject = sprintf("Subject%02d", indx),
+                   times = haz_i$est.grid,
+                   hazrd = haz_i$haz.est)
+  return(res)
+}
+
+
+hazrdData = NULL
+
+indx = 0
+for (i in unique(DataFraFirst$SUBJECTINDEX))
+{
+  indx = indx + 1
+  hazrdData = rbind(hazrdData, hazardPlotMaker(i))
+}
+
+ggplot(data=hazrdData, aes(x=times)) + 
+  geom_line(aes(y=hazrd), linetype=1,color='black',alpha=0.5) + 
+  facet_wrap(.~Subject) + 
+  ylab('hazard') + xlab('time') +  
+  theme_light()
+
+
+
+# +++++++ Different Hazard +++++++++ 
+hazardPlotMaker = function(i)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+  i_Else_haz = with(DataFraFirst_i %>% filter(Region == "Else"),
+                    muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
+  i_Nose_haz = with(DataFraFirst_i %>% filter(Region == "Nose"),
+                    muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
+  i_EyeL_haz = with(DataFraFirst_i %>% filter(Region == "EyeL"),
+                    muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
+  i_EyeR_haz = with(DataFraFirst_i %>% filter(Region == "EyeR"),
+                    muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
+  
+  res = data.frame(Subject = sprintf("Subject%02d", indx),
+                   times = obs_time,
+                   Nrisk = n_risk,
+                   Nevent = n_event,
+                   KMsv = KM_surv,
+                   NAsv = NA_surv,
+                   upNA = up_NA,
+                   loNA = lo_NA,
+                   upGW = up_GW,
+                   loGW = lo_GW)
+  
+  return(res)
+}
+
+
+
+
+
+#++++++++++++++++++++++++++++++++
+# Participant-based : Is log-logistic? Is Weibull? : Hypothesis-driven !!
+
+
+
+# 
+data_frame(obs_time)
+
+##
+aggregate()
+
+
+
+##
+plot(c(0, max(obs_time)+10), c(0,1), type="n", xlab="Time",
+     ylab="Survival probability",
+     main="Comparing two estimators for survival function") ;
+points(obs_time, KM_surv, type="s", col="red", lty=1) ; 
+points(obs_time, NA_surv, type="s", col="blue", lty=1) ; 
+legend("bottomright", col=c("red", "blue"), lty=c(1, 1), 
+       c("K-M estimator", "exp(-{N-A esetimator})")) ;
+
+
+
+
+
 # Comparison Among Event 
 i = 6
 DataFraFirst_i = DataFraFirst[DataFraFirst$SUBJECTINDEX == i, ]
+
+
+#
+
+## 
+
+AnaDataFra %>% filter(SUBJECTINDEX %in% unique(DataFra$SUBJECTINDEX))
+
+
+AnaData = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Learning")
+AnaDataFra = data.frame(SUBJECTINDEX=AnaData$SUBJECTINDEX[1,], 
+                        trial = AnaData$trial[1,], 
+                        filenumber = AnaData$filenumber[1,], 
+                        start = AnaData$start[1,], 
+                        end = AnaData$end[1,], 
+                        x = AnaData$x[1,], 
+                        y = AnaData$y[1,],
+                        oddball = AnaData$oddball[1,],
+                        ucs = AnaData$ucs[1,])
+
+AnaDataFra = AnaDataFra %>% mutate(Duration = end - start)
+AnaDataFra = data.frame(AnaDataFra, count=ave(rep(1,length(AnaDataFra$trial)),
+                                              AnaDataFra$SUBJECTINDEX,
+                                              AnaDataFra$trial,
+                                              FUN = cumsum))
+
+AnaDataFraFirst = AnaDataFra[AnaDataFra$count == 1,]
+AnaDataFraFirst = AnaDataFraFirst %>% mutate(UnCen = (end < 1450))
+
+
+
+
 
 
 # Concerns about censoring

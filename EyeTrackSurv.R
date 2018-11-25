@@ -9,42 +9,11 @@ library(muhaz)
 
 # Exploratory Data Analysis
 
-#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---#---
+#++++++++++++++++++++++++++++
 
 # Load the data
 h5ls("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5")
 Data = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Discrim.")
-
-DataFraFirst$SUBJECTINDEX %>% unique
-
-
-
-## 
-
-AnaDataFra %>% filter(SUBJECTINDEX %in% unique(DataFra$SUBJECTINDEX))
-  
-
-AnaData = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Learning")
-AnaDataFra = data.frame(SUBJECTINDEX=AnaData$SUBJECTINDEX[1,], 
-                        trial = AnaData$trial[1,], 
-                        filenumber = AnaData$filenumber[1,], 
-                        start = AnaData$start[1,], 
-                        end = AnaData$end[1,], 
-                        x = AnaData$x[1,], 
-                        y = AnaData$y[1,],
-                        oddball = AnaData$oddball[1,],
-                        ucs = AnaData$ucs[1,])
-
-AnaDataFra = AnaDataFra %>% mutate(Duration = end - start)
-AnaDataFra = data.frame(AnaDataFra, count=ave(rep(1,length(AnaDataFra$trial)),
-                                              AnaDataFra$SUBJECTINDEX,
-                                              AnaDataFra$trial,
-                                              FUN = cumsum))
-
-AnaDataFraFirst = AnaDataFra[AnaDataFra$count == 1,]
-AnaDataFraFirst = AnaDataFraFirst %>% mutate(UnCen = (end < 1450))
-
-
 
 # Preprocessing
 DataFra = data.frame(SUBJECTINDEX=Data$SUBJECTINDEX, 
@@ -62,7 +31,6 @@ DataFra = data.frame(DataFra, count=ave(rep(1,length(DataFra$trial)),
 
 DataFra[DataFra$count == 1 & DataFra$end > 1400, ]
 
-glm(AnaData)
 
 ## First Fixations
 DataFra[DataFra$count == 1 & DataFra$end > 1450, 'Duration'] %>% density %>% plot
@@ -70,6 +38,7 @@ DataFra[count == 1, 'start'] %>% mean(na.rm=T)
 
 DataFraFirst = DataFra[DataFra$count == 1,]
 DataFraFirst = DataFraFirst %>% mutate(UnCen = (end < 1450))
+
 
 
 ## Survival of first fixations of patients
@@ -97,6 +66,10 @@ DataFraFirst = DataFraFirst %>%
                                        DataFraFirst$y >= Region3[2] & DataFraFirst$y <= Region3[2] + YwinSize, "Nose",
                                        ifelse(DataFraFirst$x >= Region4[1] & DataFraFirst$x <= Region4[1] + XwinSize &
                                                 DataFraFirst$y >= Region4[2] & DataFraFirst$y <= Region4[2] + YwinSize, "Else", "Else")))))
+##
+
+
+
 
 ##
 refPoint = c(800, 600)
