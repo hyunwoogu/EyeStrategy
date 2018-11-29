@@ -31,6 +31,8 @@ DataFra = data.frame(DataFra, count=ave(rep(1,length(DataFra$trial)),
 
 DataFra[DataFra$count == 1 & DataFra$end > 1400, ]
 
+ggplot(DataFraFirst, aes(x=start, y=Duration, fill=as.factor(SUBJECTINDEX))) + geom_point()
+
 
 ## First Fixations
 DataFra[DataFra$count == 1 & DataFra$end > 1450, 'Duration'] %>% density %>% plot

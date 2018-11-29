@@ -12,6 +12,42 @@ ggsurvplot(fit=my_fit_i, data=DataFraFirst_i)
 DataFraFirst_i %>% group_by(SUBJECTINDEX) %>% summarise(NumCen = sum(UnCen!=1))
 
 
+survobj.aft = Surv(time=DataFraFirst_i$Duration, 
+                   event=DataFraFirst_i$UnCen)
+
+i = 8
+i = i + 1
+DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+Fit_ph = coxph(survobj.aft ~  as.factor(DataFraFirst_i$Region) + DataFraFirst_i$start)
+summary(Fit_ph)
+
+i = i + 1
+DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+survobj.aft = Surv(time=DataFraFirst_i$Duration, 
+                   event=DataFraFirst_i$UnCen)
+regobj.aft = survreg(survobj.aft ~ 1 + as.factor(DataFraFirst_i$Region) + 
+                       DataFraFirst_i$start, dist="weibull") ;
+summary(regobj.aft)
+
+
+survobj.aft = Surv(time=DataFraFirst$Duration, 
+                   event=DataFraFirst$UnCen)
+
+regobj.aft = survreg(survobj.aft ~ 1 + as.factor(DataFraFirst$Region) + 
+                     DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX),
+                     data=DataFraFirst,
+                     dist="weibull")
+
+Fit_ph = coxph(survobj.aft ~  as.factor(DataFraFirst$Region) + 
+                 DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX))
+
+
+summary(regobj.aft)
+summary(Fit_ph)
+
+
+
+
 # Censoring : just the table?
 
 #++++++++++++++++++++++++
