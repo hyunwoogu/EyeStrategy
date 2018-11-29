@@ -732,5 +732,85 @@ fit.bre.summ$logtest
 
 
 
+DataFraFirst_i
+
+DataFraFirst_i$
+
+surv_fit = survfit(my_surv_i ~ Region, data=DataFraFirst_i) 
+
+summary(surv_fit)
+surv_fit$strata
+
+names(fit_kidney)
+fit_kidney$surv
+summ_kidney = summary(fit_kidney) ;
+names(summ_kidney)
+summ_kidney$table
+
+
+test = summary(surv_fit)
+
+
 
 # Cox PH model
+strataPlotMaker = function(i)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+  my_surv_i = Surv(time=DataFraFirst_i$Duration,
+                   event=DataFraFirst_i$UnCen)
+  my_fit_i  = survfit(formula = my_surv_i ~ DataFraFirst_i$Region, data=my_surv_i)
+  my_fit_summ_i = summary(my_fit_i)
+  
+  obs_time = my_fit_summ_i$time  # t_i
+  n_risk   = my_fit_summ_i$n.risk # Y_i
+  n_event = my_fit_summ_i$n.event # d_i
+  KM_surv = my_fit_summ_i$surv   #\hat{S}(t_i)
+  
+  # incr = n_event / n_risk  # d_i / y_i
+  # NA_cumhzd = NULL  # initialize
+  # for (j in 1:length(obs_time)) NA_cumhzd[j] = sum(incr[1:j])
+  # NA_surv = exp(-NA_cumhzd)
+  
+  # incr_GW = n_event / n_risk / (n_risk - n_event)
+  # var_GW = NULL
+  # for (i in 1:length(obs_time)) var_GW[i] = sum(incr_GW[1:i])
+  # incr_NA = n_event / n_risk^2
+  # var_NA = NULL
+  # for (i in 1:length(obs_time)) var_NA[i] = sum(incr_NA[1:i])
+  
+  # gamma = qnorm(0.975)
+
+  # stderr_GW = KM_surv * sqrt(var_GW)
+  # up_GW = KM_surv + gamma*stderr_GW
+  # lo_GW = KM_surv - gamma*stderr_GW
+  
+  res = data.frame(Subject = sprintf("Subject%02d", indx),
+                   obsTimes = obs_time,
+                   Nrisk = n_risk,
+                   Nevent = n_event,
+                   KMsv = KM_surv,
+                   Group = rep(c("Else", "EyeL", "EyeR", "Nose"), 
+                               my_fit_summ_i$strata)) #,
+                   #upGW = up_GW,
+                   # loGW = lo_GW)
+  
+  return(res)
+}
+
+strataData = NULL
+
+indx = 0
+for (i in unique(DataFraFirst$SUBJECTINDEX))
+{
+  indx = indx + 1
+  SurvData = rbind(SurvData, survPlotMaker(i))
+}
+
+ggplot(data=SurvData, aes(x=obsTimes)) + 
+  geom_step(aes(y=KMsv), linetype=1,color='red',alpha=0.5) + 
+  geom_ribbon(aes(ymin=loGW, ymax=upGW), alpha=0.2, fill='red') +
+  geom_step(aes(y=NAsv), linetype=1,color='blue',alpha=0.5) +
+  geom_ribbon(aes(ymin=loNA, ymax=upNA), alpha=0.2, fill='blue') +
+  facet_wrap(.~Subject) + 
+  ylab('Prob?') + xlab('time') +  
+  theme_light()

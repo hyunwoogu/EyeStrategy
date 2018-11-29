@@ -34,6 +34,12 @@ DataFra = data.frame(DataFra, count=ave(rep(1,length(DataFra$trial)),
 
 DataFra[DataFra$count == 1 & DataFra$end > 1400, ]
 
+DataFraSecond = DataFra[DataFra$count == 2,]
+
+rownames( DataFraSecond) [!rownames( DataFraSecond) %in% 
+                            as.character(as.numeric(rownames( DataFraFirst)) + 1) ]
+
+
 ggplot(DataFraFirst, aes(x=start, y=Duration, fill=as.factor(SUBJECTINDEX))) + geom_point()
 
 

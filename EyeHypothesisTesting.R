@@ -5,6 +5,8 @@ library(survival)
 
 
 ## Log-rank test of Left, Top
+
+
 DataFraFirst = DataFraFirst %>% mutate(Left = (x < 800),
                                        Top  = (y < 600))
 
@@ -15,6 +17,8 @@ survObj = Surv(time = DataFraFirst$Duration,
 
 test_res = survdiff(survObj ~ as.factor(DataFraFirst$Top * 1), rho=0)
 length(test_res$n)
+
+
 
 ggplot(DataFraFirst, aes(x = as.factor(SUBJECTINDEX), 
                          y = Duration, fill=as.factor(Top))) + geom_boxplot()
@@ -29,6 +33,8 @@ p + geom_boxplot() + labs(title = "CMP")
 
 
 ## Is_proportional
+
+
 
 
 
