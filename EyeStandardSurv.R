@@ -6,7 +6,27 @@ library(survminer)
 library(coxme)
 library(KMsurv)
 library(muhaz)
+library(plyr)
 
+
+
+unique(DataFraFirst$SUBJECTINDEX)[match(unique(DataFraFirst$SUBJECTINDEX), 8) >= .5]
+
+## Summary statistics
+DataFraFirst %>% group_by(SUBJECTINDEX) %>% dplyr::summarise(Censored = sum(UnCen==FALSE))
+
+
+Surv(time=DataFraFirst_i$Duration, event=DataFraFirst_i$UnCen)
+
+
+
+
+
+
+match(DataFraFirst$SUBJECTINDEX, unique(DataFraFirst$SUBJECTINDEX))
+
+
+DataFraFirst$SUBJECTINDEX %>% table
 
 ggsurvplot(fit=my_fit_i, data=DataFraFirst_i)
 DataFraFirst_i %>% group_by(SUBJECTINDEX) %>% summarise(NumCen = sum(UnCen!=1))

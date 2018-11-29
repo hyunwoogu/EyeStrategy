@@ -3,11 +3,32 @@ library(rhdf5)
 library(MASS)
 library(survival)
 
-dd = survreg(Surv(Duration, UnCen) ~1, data=DataFraFirst, dist="weibull")
-dd$y
 
-shape = 1/dd$scale
-scale = exp(dd$coef)
+## Log-rank test of Left, Top
+DataFraFirst = DataFraFirst %>% mutate(Left = (x < 800),
+                                       Top  = (y < 600))
+
+DataFraFirst_i = DataFraFirst %>% dplyr::filter(SUBJECTINDEX==i)
+
+survObj = Surv(time = DataFraFirst$Duration, 
+               event = DataFraFirst$UnCen)
+
+test_res = survdiff(survObj ~ as.factor(DataFraFirst$Top * 1), rho=0)
+length(test_res$n)
+
+ggplot(DataFraFirst, aes(x = as.factor(SUBJECTINDEX), 
+                         y = Duration, fill=as.factor(Top))) + geom_boxplot()
+
+DataFraFirst$SUBJECTINDEX %>% table
+
+df2<-melt(df1,id.var=c("ID","Tool","Name"))
+
+p <- ggplot(df2, aes(variable, value,fill=Tool))
+p + geom_boxplot() + labs(title = "CMP")
+
+
+
+## Is_proportional
 
 
 
@@ -45,25 +66,24 @@ mean(DataFraFirst$Duration)
 scale * gamma(1 + 1/shape)
 
 
+weibMLEfinder(500, 500, 50, 50)
+weibMLEfinder(30, 40, 20, 20)
+
 weibMLEfinder = function(x_de, y_de, xWin, yWin)
 {
   Dat = DataFraFirst %>% filter(x >= x_de & x < x_de + xWin,
                                 y >= y_de & y < y_de + yWin) %>% 
     dplyr::select(Duration, UnCen)
-  dd = survreg(Surv(Duration, UnCen) ~1, data=DataFraFirst, dist="weibull")
-  dd$y
+  foo = survreg(Surv(Duration, UnCen) ~1, data=Dat, dist="weibull")
   
-  shape = 1/dd$scale
-  scale = exp(dd$coef)
+  shape = 1/foo$scale
+  scale = exp(foo$coef)
   
-  scale * gamma(1 + 1/shape)
+  return(scale * gamma(1 + 1/shape))
 }
 
-sum_t = sum(DataFirst_i.loc[(DataFirst_i.x >= x) & (DataFirst_i.x < x + Xwin) & \
-                            (DataFirst_i.y >= y) & (DataFirst_i.y < y + Ywin) , 'Duration'])
+weibMLEfinder
 
-sum_delta = sum(DataFirst_i.loc[(DataFirst_i.x >= x) & (DataFirst_i.x < x + Xwin) & \
-                                (DataFirst_i.y >= y) & (DataFirst_i.y < y + Ywin) ,'UnCen'])
 
 
 numSliceX = 50
@@ -72,14 +92,25 @@ numSliceY = 50
 XwinSize = 1600/numSliceX
 YwinSize = 1200/numSliceY
 
-SegsX = np.arange(0, 1600-XwinSize, XwinSize)
-SegsY = np.arange(0, 1200-YwinSize, YwinSize)
+SegsX = seq(0, 1600-XwinSize, by=XwinSize)
+SegsY = seq(0, 1200-YwinSize, by=YwinSize)
 
-res = []
-for j in SegsY:
-  for i in SegsX:
-  res.append(expMLEfinder(i,j, XwinSize, YwinSize))
+res = NULL
+for (j in SegsY)
+{
+  for (i in SegsX)
+  {
+    res = c(res, weibMLEfinder(i,j, XwinSize, YwinSize))
+  }
+}
 
-res = np.reshape(res, [numSliceY-1, numSliceX-1]) 
+res1 = matrix(res, nrow=numSliceY, ncol=numSliceX, byrow=T)
+res2= apply(res1,2,rev)
+
+mat.melted = melt(res2)
+ggplot(mat.melted, aes(x = Var2, y = Var1, fill = value)) + geom_tile()
+
+setwd("../Dropbox/2018Autumn/GradThesis/EyeTracking_data")
+write.csv(res1, "WeibHeat.csv")
 
 

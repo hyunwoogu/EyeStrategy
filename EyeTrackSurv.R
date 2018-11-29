@@ -23,6 +23,9 @@ DataFra = data.frame(SUBJECTINDEX=Data$SUBJECTINDEX,
                      end = Data$end, 
                      x = Data$x, 
                      y = Data$y)
+
+DataFra$SUBJECTINDEX = match(DataFra$SUBJECTINDEX, unique(DataFra$SUBJECTINDEX))
+
 DataFra = DataFra %>% mutate(Duration = end - start)
 DataFra = data.frame(DataFra, count=ave(rep(1,length(DataFra$trial)),
                                         DataFra$SUBJECTINDEX,
@@ -68,9 +71,6 @@ DataFraFirst = DataFraFirst %>%
                                        DataFraFirst$y >= Region3[2] & DataFraFirst$y <= Region3[2] + YwinSize, "Nose",
                                        ifelse(DataFraFirst$x >= Region4[1] & DataFraFirst$x <= Region4[1] + XwinSize &
                                                 DataFraFirst$y >= Region4[2] & DataFraFirst$y <= Region4[2] + YwinSize, "Else", "Else")))))
-##
-
-
 
 
 ##
