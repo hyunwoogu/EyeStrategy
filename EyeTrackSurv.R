@@ -45,19 +45,8 @@ ggplot(DataFraFirst, aes(x=start, y=Duration, fill=as.factor(SUBJECTINDEX))) + g
 
 ## First Fixations
 DataFra[DataFra$count == 1 & DataFra$end > 1450, 'Duration'] %>% density %>% plot
-DataFra[count == 1, 'start'] %>% mean(na.rm=T)
-
 DataFraFirst = DataFra[DataFra$count == 1,]
 DataFraFirst = DataFraFirst %>% mutate(UnCen = (end < 1450))
-
-
-
-## Survival of first fixations of patients
-Part_surv = Surv(time = DataFraFirst$Duration, 
-                 event = DataFraFirst$UnCen)
-
-Fit = survfit(Part_surv ~ SUBJECTINDEX, data = DataFraFirst)
-ggsurvplot(Fit, data = DataFraFirst, pval = TRUE)
 
 
 ## Comparison of ROIs
@@ -172,7 +161,6 @@ DataFraFirst
 
 ##
 
-library(muhaz)
 kernFitwhole =
   with(DataFraFirst, muhaz(times=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
 
@@ -398,31 +386,6 @@ plot(DataEyeL_kernel$est.grid, hzd_est_EyeL,
      main='hazard estimates via kernel', type='l')
 
 
-
-
-##
-
-
-data(alloauto) # section 1.9
-str(alloauto)
-## 'data.frame':    101 obs. of  3 variables:
-##  $ time : num  0.03 0.493 0.855 1.184 1.283 ...
-##  $ type : int  1 1 1 1 1 1 1 1 1 1 ...
-##  $ delta: int  1 1 1 1 1 1 1 1 1 1 ...
-survobj.aft.allo = with(DataFraFirst,
-                        Surv(time=Duration, event=UnCen, type="right"));
-survobj.aft.allo
-##  [1]  0.030   0.493   0.855   1.184   1.283   1.480   1.776   2.138 
-##  [9]  2.500   2.763   2.993   3.224   3.421   4.178   4.441+  5.691 
-## [17]  5.855+  6.941+  6.941   7.993+  8.882   8.882   9.145+ 11.480 
-## [25] 11.513  12.105+ 12.796  12.993+ 13.849+ 16.612+ 17.138+ 20.066 
-## [33] 20.329+ 22.368+ 26.776+ 28.717+ 28.717+ 32.928+ 33.783+ 34.221+
-## [41] 34.770+ 39.593+ 41.118+ 45.003+ 46.053+ 46.941+ 48.289+ 57.401+
-## [49] 58.322+ 60.625+
-regobj.aft.allo = survreg(DataAFT ~ 1, dist="loglogistic", data = DataFraFirst) ;
-regobj.aft.allo 
-
- 
 ##
 BaseSurv = Surv(DataFraFirst$Duration,
                 event = DataFraFirst$UnCen)
@@ -432,17 +395,12 @@ ggsurvplot(BaseFit, data=DataFraFirst, pval=T)
 
 DataFraFirst %>% group_by(SUBJECTINDEX, filenumber) %>% summarise(cnt=n())
 
-
-DataFraFirst
-
 setwd("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/")
 write_csv(DataFraFirst, "../Dropbox/2018Autumn/GradThesis/EyeTracking_data/Data.csv")
 
 
 ##
 
-coxme(Part_surv ~ 
-        age + sex + transplant + (1 | ID), data = DataFraFirst)
 
 
 
@@ -465,8 +423,6 @@ DataFraFirst_ROI = DataFraFirst %>%
 
 ##
 
-m3 <- coxph(Surv(time1, time2, mortality) ~ age + sex + transplant + frailty(ID, 
-                                                                             distribution = "gaussian", sparse = FALSE, method = "reml"), data = dat)
 ## show model results
 m3
 
@@ -520,6 +476,11 @@ CNT_surv = Surv(time = CountPic$Duration,
 CNT_Fit = survfit(CNT_surv ~ First, data=CountPic)
 ggsurvplot(CNT_Fit, data = CountPic, pval=T)
 
+
+#
+
+
+
 ## 
 Sam = c(3,4,5,7,8,9,10)
 Cen = c(1,0,1,1,0,0,1)
@@ -529,47 +490,3 @@ summary(SuvvFit)
 SuvvFit$time
 
 cumsum(SuvvFit$n.event/SuvvFit$n.risk)
-
-
-
-##
-
-##
-fit<- survfit(Surv(time, status) ~ sex, data = lung)
-
-# List of ggsurvplots
-require("survminer")
-
-# Arrange multiple ggsurvplots and print the output
-arrange_ggsurvplots(splots, print = TRUE,
-                    ncol = 2, nrow = 1, risk.table.height = 0.4)
-
-
-
-
-# Load the data
-h5ls("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5")
-Data = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Discrim.")
-
-
-
-## Another Dataset Analysis (Do Not Run : Not applicable)
-AnaDataFra %>% filter(SUBJECTINDEX %in% unique(DataFra$SUBJECTINDEX))
-
-AnaData = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Learning")
-AnaDataFra = data.frame(SUBJECTINDEX=AnaData$SUBJECTINDEX[1,], 
-                        trial = AnaData$trial[1,], 
-                        filenumber = AnaData$filenumber[1,], 
-                        start = AnaData$start[1,], 
-                        end = AnaData$end[1,], 
-                        x = AnaData$x[1,], 
-                        y = AnaData$y[1,],
-                        oddball = AnaData$oddball[1,],
-                        ucs = AnaData$ucs[1,])
-
-A = AnaDataFra %>% filter(SUBJECTINDEX %in% unique(DataFra$SUBJECTINDEX))  %>%
-  group_by(SUBJECTINDEX) %>% summarise(meanDuration = mean(Duration)) %>% pull(meanDuration)
-
-B = DataFra %>% group_by(SUBJECTINDEX) %>% summarise(meanDuration = mean(Duration)) %>% pull(meanDuration)
-
-plot(A, B) # Different Participants! -> thus not applicable! :(

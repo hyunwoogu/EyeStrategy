@@ -69,3 +69,26 @@ geom_bar(aes(fill = variable), position = "dodge", stat="identity")
 # Frailty Model
 m3 <- coxph(Surv(time1, time2, mortality) ~ age + sex + transplant + frailty(ID, 
                                                                              distribution = "gaussian", sparse = FALSE, method = "reml"), data = dat)
+
+
+
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
+# Unclassified
+
+## Survival of first fixations of patients
+Part_surv = Surv(time = DataFraFirst$Duration, 
+                 event = DataFraFirst$UnCen)
+
+Fit = survfit(Part_surv ~ SUBJECTINDEX, data = DataFraFirst)
+ggsurvplot(Fit, data = DataFraFirst, pval = TRUE)
+
+
+unique(DataFraFirst$SUBJECTINDEX)[match(unique(DataFraFirst$SUBJECTINDEX), 8) >= .5]
+
+
+## Summary statistics
+
+DataFraFirst %>% group_by(SUBJECTINDEX) %>% dplyr::summarise(Censored = sum(UnCen==FALSE))
+Surv(time=DataFraFirst_i$Duration, event=DataFraFirst_i$UnCen)

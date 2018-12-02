@@ -8,79 +8,6 @@ library(KMsurv)
 library(muhaz)
 library(plyr)
 
-
-
-unique(DataFraFirst$SUBJECTINDEX)[match(unique(DataFraFirst$SUBJECTINDEX), 8) >= .5]
-
-## Summary statistics
-DataFraFirst %>% group_by(SUBJECTINDEX) %>% dplyr::summarise(Censored = sum(UnCen==FALSE))
-
-
-Surv(time=DataFraFirst_i$Duration, event=DataFraFirst_i$UnCen)
-
-
-
-
-
-## 
-match(DataFraFirst$SUBJECTINDEX, unique(DataFraFirst$SUBJECTINDEX))
-
-
-DataFraFirst$SUBJECTINDEX %>% table
-
-ggsurvplot(fit=my_fit_i, data=DataFraFirst_i)
-DataFraFirst_i %>% group_by(SUBJECTINDEX) %>% summarise(NumCen = sum(UnCen!=1))
-
-
-survobj.aft = Surv(time=DataFraFirst$Duration, 
-                   event=DataFraFirst$UnCen)
-Fit_ph = coxph(survobj.aft ~  as.factor(DataFraFirst$Region) + DataFraFirst$start)
-summary(Fit_ph)
-
-regobj.aft = survreg(survobj.aft ~ 1 + as.factor(DataFraFirst$Region) + 
-                       DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), dist="weibull") ;
-summary(regobj.aft)
-
-
-
-survobj.aft = Surv(time=DataFraFirst_i$Duration, 
-                   event=DataFraFirst_i$UnCen)
-
-i = 8
-i = i + 1
-DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
-Fit_ph = coxph(survobj.aft ~  as.factor(DataFraFirst_i$Region) + DataFraFirst_i$start)
-summary(Fit_ph)
-
-i = i + 1
-DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
-survobj.aft = Surv(time=DataFraFirst_i$Duration, 
-                   event=DataFraFirst_i$UnCen)
-regobj.aft = survreg(survobj.aft ~ 1 + as.factor(DataFraFirst_i$Region) + 
-                       DataFraFirst_i$start, dist="weibull") ;
-summary(regobj.aft)
-
-
-survobj.aft = Surv(time=DataFraFirst$Duration, 
-                   event=DataFraFirst$UnCen)
-
-regobj.aft = survreg(survobj.aft ~ 1 + as.factor(DataFraFirst$Region) + 
-                     DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX),
-                     data=DataFraFirst,
-                     dist="weibull")
-
-Fit_ph = coxph(survobj.aft ~  as.factor(DataFraFirst$Region) + 
-                 DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX))
-
-
-summary(regobj.aft)
-summary(Fit_ph)
-
-
-
-
-# Censoring : just the table?
-
 #++++++++++++++++++++++++
 # Survival plot by participants
 survPlotMaker = function(i)
@@ -150,51 +77,35 @@ ggplot(data=SurvData, aes(x=obsTimes)) +
 
 
 
-#++++++++++++++++++++++++
-# Hypothesis test by participants : Different from the reference == Else
 
-DataFraFirst_i
-DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
-my_surv_i = Surv(time=DataFraFirst_i$Duration,
-                 event=DataFraFirst_i$UnCen)
+#++++++
+# Censoring's effect 
+ozone = airquality$Ozone
+ozone.ecdf = ecdf(ozone)
+ozone.ecdf %>% unlist
 
-testSurv_i = survdiff(my_surv_i ~ DataFraFirst_i$Region, rho=0) ;
-testSurv_i$chisq
-
-1 - pchisq(testSurv_i$chisq, length(testSurv_i$n) - 1)
+plot(ozone.ecdf, xlab = 'Sample Quantiles of Ozone', ylab = '', 
+     main = 'Empirical Cumluative Distribution\nOzone Pollution in New York')
 
 
-indx = 0
-p.s = NULL
-chisq.s = NULL
+n = sum(!is.na(ozone))
+ozone.ordered = sort(ozone)
+plot(ozone.ordered, (1:n)/n, type = 's', ylim = c(0, 1), 
+     xlab = 'Sample Quantiles of Ozone', ylab = '', 
+     main = 'Empirical Cumluative Distribution\nOzone Pollution in New York')
 
-for (i in unique(DataFraFirst$SUBJECTINDEX))
-{
-  indx = indx + 1
-  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
-  my_surv_i = Surv(time=DataFraFirst_i$Duration,
-                   event=DataFraFirst_i$UnCen)
-  
-  testSurv_i = survdiff(my_surv_i ~ DataFraFirst_i$Region, rho=0) ;
-  p.s = c(p.s, 1 - pchisq(testSurv_i$chisq, length(testSurv_i$n) - 1))
-  chisq.s = c(chisq.s, testSurv_i$chisq)
-}
+# mark the 3rd quartile
+abline(v = 62.5, h = 0.75)
 
-## different scale needed...
-test = data.frame(Subject = 1:29,
-                  p.values = p.s,
-                  Wald.chisq = chisq.s)
+# add a legend
+legend(65, 0.7, '3rd Quartile = 63.5', box.lwd = 0)
 
-ggplot(test, aes(x = Subject)) +
-  geom_point(aes(y = Wald.chisq, colour = "chi-squared")) +
-  geom_point(aes(y = p.values, colour = "p-value")) +
-  scale_y_continuous(sec.axis = sec_axis(~.*.00001, name = "p-value")) +
-  scale_colour_manual(values = c("blue", "red")) +
-  labs(y = "chi-squared",
-       x = "Subject",
-       colour = "Parameter") +
-  theme(legend.position = c(0.8, 0.9)) + 
-  theme_light()
+# add the label on the y-axis
+mtext(text = expression(hat(F)[n](x)), side = 2, line = 2.5)
+
+
+
+
 
 
 
@@ -257,7 +168,7 @@ ggplot(data=hazrdData, aes(x=times)) +
 
 
 
-# +++++++ Different Hazard +++++++++ 
+# +++++++ Different Hazard +++++++++ for a specific Participant
 hazardPlotMaker = function(i)
 {
   DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
@@ -504,11 +415,6 @@ print(CenAtLeastOnce, n=29)
 
 
 ###
-
-
-
-
-
 incr_GW = n_event / n_risk / (n_risk - n_event)
 var_GW = NULL
 for (i in 1:length(obs_time)) var_GW[i] = sum(incr_GW[1:i]) ;
@@ -542,14 +448,9 @@ legend("topright", col=c("red", "blue"), lty=c(1, 1),
        c("K-M estimator", "exp(-{N-A esetimator})")) ; 
 
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Facet ggsurvplot() output by
-# a combination of factors
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 # Fit (complexe) survival curves
 #++++++++++++++++++++++++++++++++++++
-require("survival")
+
 fit3 <- survfit( Surv(time, status) ~ sex + rx + adhere,
                  data = colon )
 
@@ -563,8 +464,7 @@ ggsurvplot(my_fit, my_surv, facet.by = SUBJECTINDEX,
            palette = "jco", pval = TRUE)
 
 
-require("survival")
-library("survminer")
+
 fit2 <- survfit( my_surv ~ Region + SUBJECTINDEX, data = DataFraFirst )
 ggsurv <- ggsurvplot(fit2, conf.int = TRUE)
 
@@ -766,6 +666,7 @@ i
 
 
 # Cox PH model
+
 strataPlotMaker = function(i)
 {
   DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
@@ -803,12 +704,22 @@ strataPlotMaker = function(i)
                    Nevent = n_event,
                    KMsv = KM_surv,
                    Group = rep(c("Else", "EyeL", "EyeR", "Nose"), 
-                               my_fit_i$strata)) #,
+                               diff(c(0, which(diff(obs_time) < 0), length(obs_time))))) #,
                    #upGW = up_GW,
                    # loGW = lo_GW)
   
   return(res)
 }
+
+
+
+rep(c("Else", "EyeL", "EyeR", "Nose"), 
+    diff(c(0, which(diff(obs_time) < 0), length(obs_time))))
+
+obs_time
+    
+my_fit_summ_i
+
 KM_surv %>% length
 
 n_event %>% length
@@ -819,6 +730,8 @@ my_fit_summ_i$n.risk %>% length
 my_fit_summ_i$strata %>% rownames
 obs_time
 
+strataData$Subject %>% table
+
 strataData = NULL
 
 indx = 0
@@ -828,11 +741,115 @@ for (i in unique(DataFraFirst$SUBJECTINDEX))
   strataData = rbind(strataData, strataPlotMaker(i))
 }
 
-ggplot(data=SurvData, aes(x=obsTimes)) + 
-  geom_step(aes(y=KMsv), linetype=1,color='red',alpha=0.5) + 
-  geom_ribbon(aes(ymin=loGW, ymax=upGW), alpha=0.2, fill='red') +
-  geom_step(aes(y=NAsv), linetype=1,color='blue',alpha=0.5) +
-  geom_ribbon(aes(ymin=loNA, ymax=upNA), alpha=0.2, fill='blue') +
+Subject = rep(sprintf("Subject%02d", indx), length(obs_time))
+obsTimes = obs_time
+Nrisk = n_risk
+Nevent = n_event
+KMsv = KM_surv
+Group = rep(c("Else", "EyeL", "EyeR", "Nose")
+            diff(c(0, which(diff(obs_time) < 0), length(obs_time))))) #,
+#upGW = up_GW,
+# loGW = lo_GW)
+
+ggplot(data=strataData, aes(x=obsTimes)) + 
+  geom_step(aes(y=KMsv, col=Group), linetype=1,alpha=0.9) + 
   facet_wrap(.~Subject) + 
   ylab('Prob?') + xlab('time') +  
   theme_light()
+
+
+
+
+## isWeibull
+
+strataPlotMaker = function(i)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+  my_surv_i = Surv(time=DataFraFirst_i$Duration,
+                   event=DataFraFirst_i$UnCen)
+  my_fit_i  = survfit(formula = my_surv_i ~ DataFraFirst_i$Region, data=my_surv_i)
+  my_fit_summ_i = summary(my_fit_i)
+  
+  obs_time = my_fit_summ_i$time  # t_i
+  n_risk   = my_fit_summ_i$n.risk # Y_i
+  n_event = my_fit_summ_i$n.event # d_i
+  KM_surv = my_fit_summ_i$surv   #\hat{S}(t_i)
+  
+  # incr = n_event / n_risk  # d_i / y_i
+  # NA_cumhzd = NULL  # initialize
+  # for (j in 1:length(obs_time)) NA_cumhzd[j] = sum(incr[1:j])
+  # NA_surv = exp(-NA_cumhzd)
+  
+  # incr_GW = n_event / n_risk / (n_risk - n_event)
+  # var_GW = NULL
+  # for (i in 1:length(obs_time)) var_GW[i] = sum(incr_GW[1:i])
+  # incr_NA = n_event / n_risk^2
+  # var_NA = NULL
+  # for (i in 1:length(obs_time)) var_NA[i] = sum(incr_NA[1:i])
+  
+  # gamma = qnorm(0.975)
+  
+  # stderr_GW = KM_surv * sqrt(var_GW)
+  # up_GW = KM_surv + gamma*stderr_GW
+  # lo_GW = KM_surv - gamma*stderr_GW
+  
+  res = data.frame(Subject = rep(sprintf("Subject%02d", indx), length(obs_time)),
+                   obsTimes = obs_time,
+                   Nrisk = n_risk,
+                   Nevent = n_event,
+                   KMsv = KM_surv,
+                   Group = rep(c("Else", "EyeL", "EyeR", "Nose"), 
+                               diff(c(0, which(diff(obs_time) < 0), length(obs_time))))) #,
+  #upGW = up_GW,
+  # loGW = lo_GW)
+  
+  return(res)
+}
+
+
+
+##
+
+strataPlotMaker = function(i)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+  my_surv_i = Surv(time=DataFraFirst_i$Duration,
+                   event=DataFraFirst_i$UnCen)
+  my_fit_i  = survfit(formula = my_surv_i ~ DataFraFirst_i$Region, data=my_surv_i)
+  my_fit_summ_i = summary(my_fit_i)
+  
+  obs_time = my_fit_summ_i$time  # t_i
+  n_risk   = my_fit_summ_i$n.risk # Y_i
+  n_event = my_fit_summ_i$n.event # d_i
+  KM_surv = my_fit_summ_i$surv   #\hat{S}(t_i)
+  
+  # incr = n_event / n_risk  # d_i / y_i
+  # NA_cumhzd = NULL  # initialize
+  # for (j in 1:length(obs_time)) NA_cumhzd[j] = sum(incr[1:j])
+  # NA_surv = exp(-NA_cumhzd)
+  
+  # incr_GW = n_event / n_risk / (n_risk - n_event)
+  # var_GW = NULL
+  # for (i in 1:length(obs_time)) var_GW[i] = sum(incr_GW[1:i])
+  # incr_NA = n_event / n_risk^2
+  # var_NA = NULL
+  # for (i in 1:length(obs_time)) var_NA[i] = sum(incr_NA[1:i])
+  
+  # gamma = qnorm(0.975)
+  
+  # stderr_GW = KM_surv * sqrt(var_GW)
+  # up_GW = KM_surv + gamma*stderr_GW
+  # lo_GW = KM_surv - gamma*stderr_GW
+  
+  res = data.frame(Subject = rep(sprintf("Subject%02d", indx), length(obs_time)),
+                   obsTimes = obs_time,
+                   Nrisk = n_risk,
+                   Nevent = n_event,
+                   KMsv = KM_surv,
+                   Group = rep(c("Else", "EyeL", "EyeR", "Nose"), 
+                               diff(c(0, which(diff(obs_time) < 0), length(obs_time))))) #,
+  #upGW = up_GW,
+  # loGW = lo_GW)
+  
+  return(res)
+}
