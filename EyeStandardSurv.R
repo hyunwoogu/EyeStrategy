@@ -76,8 +76,6 @@ ggplot(data=SurvData, aes(x=obsTimes)) +
   theme_light()
 
 
-
-
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Censoring's effect 
 
@@ -115,9 +113,8 @@ ggplot(NULL, aes(x=obs_time)) +
   theme_light()
 
 
-
-
-# Dependency over the pictures?
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# No dependency over the pictures
 i = 3
 DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
 CountPic = data.frame(DataFraFirst_i, 
@@ -161,7 +158,6 @@ DataFraFirst_i_EyeL = DataFraFirst_i %>% filter(Region == "EyeL")
 DataFraFirst_i_EyeR = DataFraFirst_i %>% filter(Region == "EyeR")
 
 
-
 hazardPlotMaker = function(i)
 {
   DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
@@ -193,33 +189,50 @@ ggplot(data=hazrdData, aes(x=times)) +
 
 
 # +++++++ Different Hazard +++++++++ for a specific Participant
-hazardPlotMaker = function(i)
-{
-  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
-  i_Else_haz = with(DataFraFirst_i %>% filter(Region == "Else"),
-                    muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
-  i_Nose_haz = with(DataFraFirst_i %>% filter(Region == "Nose"),
-                    muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
-  i_EyeL_haz = with(DataFraFirst_i %>% filter(Region == "EyeL"),
-                    muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
-  i_EyeR_haz = with(DataFraFirst_i %>% filter(Region == "EyeR"),
-                    muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
-  
-  res = data.frame(Subject = sprintf("Subject%02d", indx),
-                   times = obs_time,
-                   Nrisk = n_risk,
-                   Nevent = n_event,
-                   KMsv = KM_surv,
-                   NAsv = NA_surv,
-                   upNA = up_NA,
-                   loNA = lo_NA,
-                   upGW = up_GW,
-                   loGW = lo_GW)
-  
-  return(res)
-}
+
+i = 8
+i = 11
+i = 13 ##
+i = 16 #
+i = 20
+i = 22
+i = 23
+i = 24
+i = 25
+i = 28
+
+i = i + 1
+DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+
+i_Else_haz = with(DataFraFirst_i %>% filter(Region == "Else"),
+                  muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
+i_Nose_haz = with(DataFraFirst_i %>% filter(Region == "Nose"),
+                  muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
+i_EyeL_haz = with(DataFraFirst_i %>% filter(Region == "EyeL"),
+                  muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
+i_EyeR_haz = with(DataFraFirst_i %>% filter(Region == "EyeR"),
+                  muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
 
 
+res = data.frame(Subject = sprintf("Subject%02d", i),
+                 Else_times = i_Else_haz$est.grid,
+                 Else_hazrd = i_Else_haz$haz.est,
+                 Nose_times = i_Nose_haz$est.grid,
+                 Nose_hazrd = i_Nose_haz$haz.est,
+                 EyeL_times = i_EyeL_haz$est.grid,
+                 EyeL_hazrd = i_EyeL_haz$haz.est,
+                 EyeR_times = i_EyeR_haz$est.grid,
+                 EyeR_hazrd = i_EyeR_haz$haz.est)
+
+
+ggplot(data=res) + 
+  geom_line(aes(x=Else_times, y=Else_hazrd), linetype=1,color='red',alpha=0.5) + 
+  geom_line(aes(x=Nose_times, y=Nose_hazrd), linetype=1,color='purple',alpha=0.5) + 
+  geom_line(aes(x=EyeL_times, y=EyeL_hazrd), linetype=1,color='green',alpha=0.5) + 
+  geom_line(aes(x=EyeR_times, y=EyeR_hazrd), linetype=1,color='blue',alpha=0.5) + 
+  facet_wrap(.~Subject) + 
+  ylab('hazard') + xlab('time') +  
+  theme_light()
 
 
 

@@ -77,12 +77,14 @@ extractAIC(fit.phfix32)
 extractAIC(fit.phfix33)
 
 
-C = matrix(c(1, -1, 0, 0,
-             0, -1, 1, 0), nrow=2, byrow=TRUE)
+C = matrix(c(1, -1, rep(0, 30),
+             0, -1, 1, rep(0, 29)), nrow=2, byrow=TRUE)
 
-numer = C %*% fit.phfix2$coefficients
-denom = C %*% fit.phfix2$var %*% t(C)
+numer = C %*% fit.phfix3$coefficients
+denom = C %*% fit.phfix3$var %*% t(C)
 WALD = t(numer) %*% solve(denom) %*% numer
+
+1 - pchisq(q=WALD, df=2)
 
 
 ggplot(DataFraFirst, aes(x=Region, y=Duration)) + geom_boxplot()
@@ -94,6 +96,7 @@ DataFraFirst %>% group_by(Region) %>% summarise(Me = mean(Duration),
                                                 SD = sd(Duration))
 
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Participant-wise Analysis 
 
 
@@ -278,8 +281,8 @@ fit.phfix = coxph(survobj.aft ~  as.factor(DataFraFirst$Region)
 
 summary(fit.phfix)
 
-C <- matrix(c(1, -1, 0, 0,
-              0, -1, 1, 0), nrow=2, byrow=TRUE)
+C = matrix(c(1, -1, 0, 0,
+             0, -1, 1, 0), nrow=2, byrow=TRUE)
 
 numer = C %*% fit.phfix$coefficients
 denom = C %*% fit.phfix$var %*% t(C)

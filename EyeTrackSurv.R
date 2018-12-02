@@ -400,10 +400,6 @@ write_csv(DataFraFirst, "../Dropbox/2018Autumn/GradThesis/EyeTracking_data/Data.
 
 
 ##
-
-
-
-
 pval = NULL
 
 for (i in seq(-1,1,by=.05))
