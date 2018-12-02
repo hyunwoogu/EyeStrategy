@@ -10,6 +10,11 @@ survObj = Surv(time = DataFraFirst$Duration,
                event = DataFraFirst$UnCen)
 survFit = survfit(survObj ~ DataFraFirst$Region)
 
+
+## Summary Statistics 
+sumStat = summary(survFit)
+sumStat$table
+
 ## Log-rank tests
 comp(ten(survFit),  p=c(0, 1, 1, 0.5, 0.5), q=c(1, 0, 1, 0.5, 2))
 
@@ -72,6 +77,21 @@ extractAIC(fit.phfix32)
 extractAIC(fit.phfix33)
 
 
+C = matrix(c(1, -1, 0, 0,
+             0, -1, 1, 0), nrow=2, byrow=TRUE)
+
+numer = C %*% fit.phfix2$coefficients
+denom = C %*% fit.phfix2$var %*% t(C)
+WALD = t(numer) %*% solve(denom) %*% numer
+
+
+ggplot(DataFraFirst, aes(x=Region, y=Duration)) + geom_boxplot()
+
+summary(aov(Duration ~ Region, DataFraFirst))
+
+DataFraFirst %>% group_by(Region) %>% summarise(Me = mean(Duration),
+                                                Med= median(Duration),
+                                                SD = sd(Duration))
 
 
 # Participant-wise Analysis 
@@ -144,5 +164,161 @@ plot(density(DataFraFirst$Duration))
 
 DataFraSecond = DataFra[DataFra$count == 2, ]
 
+
+
+
+
+
+# Participant-wise 
+
+## Summary Statistics 
+
+
+
+#++++++++++++++++++++++++
+# Hypothesis test by participants : Different from the reference == Else
+
+DataFraFirst_i
+DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+my_surv_i = Surv(time=DataFraFirst_i$Duration,
+                 event=DataFraFirst_i$UnCen)
+
+testSurv_i = survdiff(my_surv_i ~ DataFraFirst_i$Region, rho=0) ;
+testSurv_i$chisq
+
+1 - pchisq(testSurv_i$chisq, length(testSurv_i$n) - 1)
+
+
+indx = 0
+p.s = NULL
+chisq.s = NULL
+
+for (i in unique(DataFraFirst$SUBJECTINDEX))
+{
+  indx = indx + 1
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+  my_surv_i = Surv(time=DataFraFirst_i$Duration,
+                   event=DataFraFirst_i$UnCen)
+  
+  testSurv_i = survdiff(my_surv_i ~ DataFraFirst_i$Region, rho=0) ;
+  p.s = c(p.s, 1 - pchisq(testSurv_i$chisq, length(testSurv_i$n) - 1))
+  chisq.s = c(chisq.s, testSurv_i$chisq)
+}
+
+## different scale needed...
+test = data.frame(Subject = 1:29,
+                  p.values = p.s,
+                  Wald.chisq = chisq.s)
+
+ggplot(test, aes(x = Subject)) +
+  geom_point(aes(y = Wald.chisq, colour = "chi-squared")) +
+  geom_point(aes(y = p.values, colour = "p-value")) +
+  scale_y_continuous(sec.axis = sec_axis(~.*.00001, name = "p-value")) +
+  scale_colour_manual(values = c("blue", "red")) +
+  labs(y = "chi-squared",
+       x = "Subject",
+       colour = "Parameter") +
+  theme(legend.position = c(0.8, 0.9)) + 
+  theme_light()
+
+
+
+## Cox
+
+
+survobj.aft = Surv(time=DataFraFirst$Duration, 
+                   event=DataFraFirst$UnCen)
+
+
+Fit_ph = coxph(survobj.aft ~  as.factor(DataFraFirst$Region) + DataFraFirst$start +
+                 DataFraFirst$constant)
+Fit_ph = coxph(survobj.aft ~  as.factor(DataFraFirst$Region) 
+               + DataFraFirst$start + DataFraFirst$constant +
+                 factor(DataFraFirst$SUBJECTINDEX, levels = sample(1:29)))
+
+
+summary(Fit_ph)
+
+DataFraFirst$constant %>% table
+
+ggplot(DataFraFirst, aes(x=constant, y=Duration, fill=Region)) + geom_boxplot()
+
+
+
+## AFT
+regobj.aft1 = survreg(survobj.aft ~ 1 + as.factor(DataFraFirst$Region), dist="weibull")
+
+regobj.aft2 = survreg(survobj.aft ~ 1 + as.factor(DataFraFirst$Region) + 
+                        DataFraFirst$start, dist="weibull") ;
+
+regobj.aft3 = survreg(survobj.aft ~ 1 + as.factor(DataFraFirst$Region) + 
+                        DataFraFirst$start + DataFraFirst$constant, dist="weibull") ;
+
+regobj.aft4 = survreg(survobj.aft ~ 1 + as.factor(DataFraFirst$Region) + 
+                        DataFraFirst$start + DataFraFirst$constant +
+                        as.factor(DataFraFirst$SUBJECTINDEX), dist="weibull") ;
+
+extractAIC(regobj.aft1)
+extractAIC(regobj.aft2)
+extractAIC(regobj.aft3)
+extractAIC(regobj.aft4)
+
+summary(regobj.aft1)
+
+
+
+
+fit.phfix = coxph(survobj.aft ~  factor(larynx$stage) + larynx$age, method="breslow");
+
+#fit.phfix = coxph(survobj.aft ~  factor(larynx$stage) + larynx$age, method="exact");
+#fit.phfix = coxph(survobj.aft ~  factor(larynx$stage) + larynx$age, method="efron"); #기본값으로 실행
+
+fit.phfix = coxph(survobj.aft ~  as.factor(DataFraFirst$Region) 
+                  + DataFraFirst$start + factor(DataFraFirst$SUBJECTINDEX, levels = sample(1:29)))
+
+summary(fit.phfix)
+
+C <- matrix(c(1, -1, 0, 0,
+              0, -1, 1, 0), nrow=2, byrow=TRUE)
+
+numer = C %*% fit.phfix$coefficients
+denom = C %*% fit.phfix$var %*% t(C)
+WALD = t(numer) %*% solve(denom) %*% numer
+
+
+
+
+survobj.aft = Surv(time=DataFraFirst_i$Duration, 
+                   event=DataFraFirst_i$UnCen)
+
+i = 1
+i = i + 1
+DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+Fit_ph = coxph(survobj.aft ~  as.factor(DataFraFirst_i$Region) + DataFraFirst_i$start)
+summary(Fit_ph)
+
+i = i + 1
+DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+survobj.aft = Surv(time=DataFraFirst_i$Duration, 
+                   event=DataFraFirst_i$UnCen)
+regobj.aft = survreg(survobj.aft ~ 1 + as.factor(DataFraFirst_i$Region) + 
+                       DataFraFirst_i$start, dist="weibull") ;
+summary(regobj.aft)
+
+
+survobj.aft = Surv(time=DataFraFirst$Duration, 
+                   event=DataFraFirst$UnCen)
+
+regobj.aft = survreg(survobj.aft ~ 1 + as.factor(DataFraFirst$Region) + 
+                       DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX),
+                     data=DataFraFirst,
+                     dist="weibull")
+
+Fit_ph = coxph(survobj.aft ~  as.factor(DataFraFirst$Region) + 
+                 DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX))
+
+
+summary(regobj.aft)
+summary(Fit_ph)
 
 
