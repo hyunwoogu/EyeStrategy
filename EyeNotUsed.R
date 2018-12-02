@@ -331,3 +331,34 @@ SuvvFit$time
 cumsum(SuvvFit$n.event/SuvvFit$n.risk)
 
 
+
+
+##
+
+
+##
+
+DataFraFirst = data.frame(DataFraFirst, 
+                          faceCNT=ave(rep(1,length(DataFraFirst$SUBJECTINDEX)),
+                                      DataFraFirst$SUBJECTINDEX,
+                                      DataFraFirst$filenumber,
+                                      FUN = cumsum))
+
+
+###
+
+ggplot(DataFraFirst, aes(x=faceCNT, y=Duration, color=factor(SUBJECTINDEX))) +
+  geom_point() +
+  theme_classic()
+
+DataFraFirst %>% 
+  
+  DataFraFirst %>% filter(SUBJECTINDEX==6) %>% dplyr::select(filenumber) %>% table
+
+DataFraFirst %>% 
+  
+  DataFraFirst %>% filter(SUBJECTINDEX==6) %>%
+  dplyr::select(filenumber)
+
+fct_lump(DataFraFirst$filenumber) %>% levels; fct_lump(gss_cat$relig, n=5) %>% levels;
+
