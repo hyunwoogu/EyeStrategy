@@ -5,6 +5,7 @@ library(survival)
 library(coin)
 library(survMisc)
 
+
 # Whole-sample Analysis
 survObj = Surv(time = DataFraFirst$Duration, 
                event = DataFraFirst$UnCen)
@@ -18,6 +19,12 @@ sumStat$table
 ## Log-rank tests
 comp(ten(survFit),  p=c(0, 1, 1, 0.5, 0.5), q=c(1, 0, 1, 0.5, 2))
 
+i = i + 1
+DataFraFirst_i = DataFraFirst %>% dplyr::filter(SUBJECTINDEX==i)
+survObj_i = Surv(time = DataFraFirst_i$Duration, 
+               event = DataFraFirst_i$UnCen)
+survFit_i = survfit(survObj_i ~ DataFraFirst_i$Region)
+comp(ten(survFit_i),  p=c(0, 1, 1, 0.5, 0.5), q=c(1, 0, 1, 0.5, 2))
 
 ## AFT 
 regobj.aft1 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region), dist="weibull")
@@ -30,6 +37,7 @@ regobj.aft32 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
 
 
 summary(regobj.aft1)
+test$wald
 summary(regobj.aft2)
 summary(regobj.aft3)
 summary(regobj.aft32)
@@ -72,20 +80,20 @@ fit.phfix32 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                      as.factor(DataFraFirst$SUBJECTINDEX))
 
 
-summary(fit.phfix1)
-summary(fit.phfix2)
-summary(fit.phfix3)
-summary(fit.phfix32)
+(fit.phfix1.sum = summary(fit.phfix1))
+(fit.phfix2.sum = summary(fit.phfix2))
+(fit.phfix3.sum = summary(fit.phfix3))
+(fit.phfix32.sum = summary(fit.phfix32))
 
 extractAIC(fit.phfix1)
 extractAIC(fit.phfix2)
 extractAIC(fit.phfix3)
 
 
-fit.phfix32 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
-                      DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), method="breslow");
-fit.phfix33 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
-                      DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), method="exact");
+#fit.phfix32 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+#                      DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), method="breslow");
+#fit.phfix33 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+#                      DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), method="exact");
 
 extractAIC(fit.phfix3)
 extractAIC(fit.phfix32)
@@ -104,18 +112,19 @@ WALD = t(numer) %*% solve(denom) %*% numer
 
 ggplot(DataFraFirst, aes(x=Region, y=Duration)) + geom_boxplot()
 
-summary(aov(Duration ~ Region, DataFraFirst))
-
 DataFraFirst %>% group_by(Region) %>% summarise(Me = mean(Duration),
                                                 Med= median(Duration),
                                                 SD = sd(Duration))
 
 
-fit.bre.summ$loglik
-fit.bre.summ$coefficients
-fit.bre.summ$sctest
-fit.bre.summ$waldtest
-fit.bre.summ$logtest
+fit.phfix3.sum$loglik
+fit.phfix3.sum$coefficients
+fit.phfix3.sum$sctest
+fit.phfix3.sum$waldtest
+fit.phfix3.sum$logtest
+
+
+
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

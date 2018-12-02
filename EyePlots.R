@@ -69,12 +69,35 @@ for (i in unique(DataFraFirst$SUBJECTINDEX))
 
 ggplot(data=SurvData, aes(x=obsTimes)) + 
   geom_step(aes(y=KMsv), linetype=1,color='red',alpha=0.5) + 
-  geom_ribbon(aes(ymin=loGW, ymax=upGW), alpha=0.2, fill='red') +
+  geom_ribbon(aes(ymin=loGW, ymax=upGW), alpha=0.3, fill='red') +
   geom_step(aes(y=NAsv), linetype=1,color='blue',alpha=0.5) +
-  geom_ribbon(aes(ymin=loNA, ymax=upNA), alpha=0.2, fill='blue') +
+  geom_ribbon(aes(ymin=loNA, ymax=upNA), alpha=0.3, fill='blue') +
   facet_wrap(.~Subject) + 
-  ylab('Prob?') + xlab('time') +  
+  ylab('Probability') + xlab('time') +  
   theme_light()
+
+ggplot(data=SurvData, aes(x=obsTimes, color=Subject)) +
+  geom_step(aes(y=KMsv), linetype=1, alpha=0.5) + 
+  geom_ribbon(aes(ymin=loGW, ymax=upGW), alpha=0.3) +
+  geom_step(aes(y=NAsv), linetype=1, alpha=0.5) +
+  geom_ribbon(aes(ymin=loNA, ymax=upNA), alpha=0.3) +
+  ylab('Probability') + xlab('time') +  
+  theme_light()
+
+ggplot(data=SurvData, aes(x=obsTimes, color=Subject)) +
+  geom_step(aes(y=KMsv), linetype=1, alpha=0.5) + 
+  # geom_ribbon(aes(ymin=loGW, ymax=upGW), alpha=0.3) +
+  geom_step(aes(y=NAsv), linetype=1, alpha=0.5) +
+  # geom_ribbon(aes(ymin=loNA, ymax=upNA), alpha=0.3) +
+  ylab('Probability') + xlab('time') +
+  ggtitle("Product-Limit Estimates of Survival Function by Participants") +
+  theme_light() +
+  theme(plot.title=element_text(hjust=.5, size=15))
+
+
+
+
+## The Lowest, The Highest
 
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -144,6 +167,88 @@ DataFraFirst %>% group_by(SUBJECTINDEX) %>%
 # +++++++ 
 # Hazard (NA) plot by participants
 
+
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# is_dist plot by participants
+is_distiPlotMaker = function(i)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+  my_surv_i = Surv(time=DataFraFirst_i$Duration,
+                   event=DataFraFirst_i$UnCen)
+  my_fit_i  = survfit(formula = my_surv_i ~ 1, data=my_surv_i)
+  my_fit_summ_i = summary(my_fit_i)
+  obs_time = my_fit_summ_i$time  # t_i
+  n_risk   = my_fit_summ_i$n.risk # Y_i
+  n_event = my_fit_summ_i$n.event # d_i
+  KM_surv = my_fit_summ_i$surv   #\hat{S}(t_i)
+  
+  incr = n_event / n_risk  # d_i / y_i
+  NA_cumhzd = NULL  # initialize
+  for (j in 1:length(obs_time)) NA_cumhzd[j] = sum(incr[1:j])
+  NA_surv = exp(-NA_cumhzd)
+  
+  incr_GW = n_event / n_risk / (n_risk - n_event)
+  var_GW = NULL
+  for (i in 1:length(obs_time)) var_GW[i] = sum(incr_GW[1:i])
+  incr_NA = n_event / n_risk^2
+  var_NA = NULL
+  for (i in 1:length(obs_time)) var_NA[i] = sum(incr_NA[1:i])
+  
+  gamma = qnorm(0.975)
+  std_NA = sqrt(var_NA)
+  up_NA = exp(- NA_cumhzd + gamma*std_NA)
+  lo_NA = exp(- NA_cumhzd - gamma*std_NA)
+  
+  stderr_GW = KM_surv * sqrt(var_GW)
+  up_GW = KM_surv + gamma*stderr_GW
+  lo_GW = KM_surv - gamma*stderr_GW
+  
+  res = data.frame(Subject = sprintf("Subject%02d", indx),
+                   obsTimes = obs_time,
+                   Nrisk = n_risk,
+                   Nevent = n_event,
+                   KMsv = KM_surv,
+                   NAsv_cumh = NA_cumhzd,
+                   Interccc=coef(lm(log(NA_cumhzd)~log(obs_time)))[1],
+                   Slopeee=coef(lm(log(NA_cumhzd)~log(obs_time)))[2],
+                   Linter=coef(lm(log(exp(NA_cumhzd)-1)~log(obs_time)))[1],
+                   Lsploe=coef(lm(log(exp(NA_cumhzd)-1)~log(obs_time)))[2])
+  
+  return(res)
+}
+
+
+is_distData = NULL
+
+indx = 0
+for (i in unique(DataFraFirst$SUBJECTINDEX))
+{
+  indx = indx + 1
+  is_distData = rbind(is_distData, is_distiPlotMaker(i))
+}
+
+
+## is Weibull?
+ggplot(data=is_distData, aes(x=log(obsTimes))) + 
+  geom_line(aes(y=log(NAsv_cumh)), linetype=1,color='blue',alpha=0.5) + 
+  geom_abline(aes(intercept=Interccc, slope=Slopeee), color='red') +
+  facet_wrap(.~Subject) + 
+  ylab('Log(H)') + xlab('Log(time)') +  
+  theme_light()
+
+
+## is Log-Logistic?
+ggplot(data=is_distData, aes(x=log(obsTimes))) + 
+  geom_line(aes(y=log(exp(NAsv_cumh)-1)), linetype=1,color='blue',alpha=0.5) + 
+  geom_abline(aes(intercept=Linter, slope=Lsploe), color='red') +
+  facet_wrap(.~Subject) + 
+  ylab('log(exp(H)-1)') + xlab('Log(time)') +  
+  theme_light()
+
+
+geom_abline(mapping = NULL, data = NULL, ..., slope, intercept,
+            na.rm = FALSE, show.legend = NA)
 
 
 #++++++++++++++++++++++++
@@ -323,10 +428,6 @@ p.val = 1 - pchisq(sdf$chisq, length(sdf$n) - 1)
 
 
 
-
-
-
-
 for (i in (DataFraFirst$SUBJECTINDEX %>% unique))
 {
   DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
@@ -340,9 +441,7 @@ for (i in (DataFraFirst$SUBJECTINDEX %>% unique))
 
 
 # Parametric Approach
-
 ## strata Plots
-
 strataPlotMaker = function(i)
 {
   DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
@@ -388,7 +487,6 @@ strataPlotMaker = function(i)
 }
 
 
-strataData$Subject %>% table
 
 strataData = NULL
 
@@ -457,7 +555,6 @@ strataPlotMaker = function(i)
 
 
 ##
-
 strataPlotMaker = function(i)
 {
   DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
@@ -501,3 +598,11 @@ strataPlotMaker = function(i)
   
   return(res)
 }
+
+
+
+
+
+
+plot(log.time,log(H),type="l",lty=1,main="Is Weibull?", col ="Blue" ) ;
+abline(coef(lm(log(H)~log.time)), col="red")
