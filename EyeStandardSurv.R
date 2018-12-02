@@ -22,7 +22,7 @@ Surv(time=DataFraFirst_i$Duration, event=DataFraFirst_i$UnCen)
 
 
 
-
+## 
 match(DataFraFirst$SUBJECTINDEX, unique(DataFraFirst$SUBJECTINDEX))
 
 
@@ -30,6 +30,17 @@ DataFraFirst$SUBJECTINDEX %>% table
 
 ggsurvplot(fit=my_fit_i, data=DataFraFirst_i)
 DataFraFirst_i %>% group_by(SUBJECTINDEX) %>% summarise(NumCen = sum(UnCen!=1))
+
+
+survobj.aft = Surv(time=DataFraFirst$Duration, 
+                   event=DataFraFirst$UnCen)
+Fit_ph = coxph(survobj.aft ~  as.factor(DataFraFirst$Region) + DataFraFirst$start)
+summary(Fit_ph)
+
+regobj.aft = survreg(survobj.aft ~ 1 + as.factor(DataFraFirst$Region) + 
+                       DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), dist="weibull") ;
+summary(regobj.aft)
+
 
 
 survobj.aft = Surv(time=DataFraFirst_i$Duration, 
@@ -705,12 +716,14 @@ fit.exact = coxph(SurvData ~  Region,
 fit.efron = coxph(SurvData ~  Region, 
                   data=DataFraFirst, method="efron")
 
-res.cox <- coxph(Surv(time, status) ~ age + sex + wt.loss, data =  lung)
+res.cox <- coxph(Surv(DataFraFirst$, status) ~ age + sex + wt.loss, data =  lung)
 res.cox
 test.ph <- cox.zph(fit.efron)
 test.ph
 
 survobj.kid = with( kidney, Surv(time=time, event=delta, type="right")); head(survobj.kid)
+
+
 
 fit.bre = coxph(survobj.kid ~  type, init=0.5, data=kidney , method="breslow");
 fit.bre.summ = summary(fit.bre)
@@ -749,7 +762,7 @@ summ_kidney$table
 
 
 test = summary(surv_fit)
-
+i
 
 
 # Cox PH model
@@ -784,18 +797,27 @@ strataPlotMaker = function(i)
   # up_GW = KM_surv + gamma*stderr_GW
   # lo_GW = KM_surv - gamma*stderr_GW
   
-  res = data.frame(Subject = sprintf("Subject%02d", indx),
+  res = data.frame(Subject = rep(sprintf("Subject%02d", indx), length(obs_time)),
                    obsTimes = obs_time,
                    Nrisk = n_risk,
                    Nevent = n_event,
                    KMsv = KM_surv,
                    Group = rep(c("Else", "EyeL", "EyeR", "Nose"), 
-                               my_fit_summ_i$strata)) #,
+                               my_fit_i$strata)) #,
                    #upGW = up_GW,
                    # loGW = lo_GW)
   
   return(res)
 }
+KM_surv %>% length
+
+n_event %>% length
+my_fit_i$strata
+my_fit_summ_i$time %>% length
+Group %>% length
+my_fit_summ_i$n.risk %>% length
+my_fit_summ_i$strata %>% rownames
+obs_time
 
 strataData = NULL
 
@@ -803,7 +825,7 @@ indx = 0
 for (i in unique(DataFraFirst$SUBJECTINDEX))
 {
   indx = indx + 1
-  SurvData = rbind(SurvData, survPlotMaker(i))
+  strataData = rbind(strataData, strataPlotMaker(i))
 }
 
 ggplot(data=SurvData, aes(x=obsTimes)) + 

@@ -2,9 +2,79 @@ library(tidyverse)
 library(rhdf5)
 library(MASS)
 library(survival)
+library(coin)
+library(survMisc)
+
+# Whole-sample Analysis
+survObj = Surv(time = DataFraFirst$Duration, 
+               event = DataFraFirst$UnCen)
+survFit = survfit(survObj ~ DataFraFirst$Region)
+
+## Log-rank tests
+comp(ten(survFit),  p=c(0, 1, 1, 0.5, 0.5), q=c(1, 0, 1, 0.5, 2))
 
 
-## Log-rank test of Left, Top
+## AFT 
+regobj.aft1 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region), dist="weibull")
+regobj.aft2 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                        DataFraFirst$start, dist="weibull")
+regobj.aft3 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                        DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), dist="weibull")
+
+summary(regobj.aft1)
+summary(regobj.aft2)
+summary(regobj.aft3)
+
+extractAIC(regobj.aft1)
+extractAIC(regobj.aft2)
+extractAIC(regobj.aft3)
+
+
+regobj.aft4 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region), dist="loglogistic")
+regobj.aft5 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                        DataFraFirst$start, dist="loglogistic")
+regobj.aft6 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                        DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), dist="loglogistic")
+
+summary(regobj.aft4)
+summary(regobj.aft5)
+summary(regobj.aft6)
+
+extractAIC(regobj.aft4)
+extractAIC(regobj.aft5)
+extractAIC(regobj.aft6)
+
+
+
+## Cox PH
+fit.phfix1 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region))
+fit.phfix2 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                        DataFraFirst$start)
+fit.phfix3 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                        DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX))
+
+summary(fit.phfix1)
+summary(fit.phfix2)
+summary(fit.phfix3)
+
+extractAIC(fit.phfix1)
+extractAIC(fit.phfix2)
+extractAIC(fit.phfix3)
+
+
+fit.phfix32 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                      DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), method="breslow");
+fit.phfix33 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                      DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), method="exact");
+
+extractAIC(fit.phfix3)
+extractAIC(fit.phfix32)
+extractAIC(fit.phfix33)
+
+
+
+
+# Participant-wise Analysis 
 
 
 DataFraFirst = DataFraFirst %>% mutate(Left = (x < 800),
@@ -17,6 +87,11 @@ survObj = Surv(time = DataFraFirst$Duration,
 
 test_res = survdiff(survObj ~ as.factor(DataFraFirst$Top * 1), rho=0)
 length(test_res$n)
+
+test_res = survdiff(survObj ~ as.factor(DataFraFirst$Top * 1), rho=0)
+
+
+ph_res = survdiff(survObj ~ as.factor(DataFraFirst$Top * 1), rho=0)
 
 
 
@@ -33,9 +108,6 @@ p + geom_boxplot() + labs(title = "CMP")
 
 
 ## Is_proportional
-
-
-
 
 
 DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==6)
@@ -67,6 +139,10 @@ lines(support, ddd, col='red')
 
 plot(density(DataFraFirst$Duration))
 
+
+
+
+DataFraSecond = DataFra[DataFra$count == 2, ]
 
 
 
