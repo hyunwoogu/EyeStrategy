@@ -460,18 +460,3 @@ CNT_surv = Surv(time = CountPic$Duration,
 
 CNT_Fit = survfit(CNT_surv ~ First, data=CountPic)
 ggsurvplot(CNT_Fit, data = CountPic, pval=T)
-
-
-#
-
-
-
-## 
-Sam = c(3,4,5,7,8,9,10)
-Cen = c(1,0,1,1,0,0,1)
-Suvv = Surv(time = Sam, event=Cen)
-SuvvFit = survfit(Suvv ~ 1, Suvv) 
-summary(SuvvFit)
-SuvvFit$time
-
-cumsum(SuvvFit$n.event/SuvvFit$n.risk)
