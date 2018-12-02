@@ -420,14 +420,7 @@ DataFraFirst_ROI = DataFraFirst %>%
 
 
 
-
-##
-
 ## show model results
-m3
-
-
-
 Fit1 = survfit(Data_surv ~ filenumber, data = DataFraFirst_ROI)
 Fit2 = survfit(Data_surv ~ filenumber, data = DataFraFirst_ROI)
 
@@ -441,14 +434,6 @@ DataFraFirst_ROI
 
 
 ## Survival analysis
-DataFraFirst_ROI %>% 
-  group_by(SUBJECTINDEX, filenumber) %>%
-  summarise(CNT = n(),
-            MeanRes = mean(Duration),
-            UnCens = mean(UnCen)) %>%
-  filter(UnCens != 1) %>% print(n=52)
-
-
 CountPic = data.frame(DataFraFirst_ROI, 
                       faceCNT=ave(rep(1,length(DataFraFirst_ROI$SUBJECTINDEX)),
                                   DataFraFirst_ROI$SUBJECTINDEX,

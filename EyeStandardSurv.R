@@ -78,35 +78,59 @@ ggplot(data=SurvData, aes(x=obsTimes)) +
 
 
 
-#++++++
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Censoring's effect 
-ozone = airquality$Ozone
-ozone.ecdf = ecdf(ozone)
-ozone.ecdf %>% unlist
 
-plot(ozone.ecdf, xlab = 'Sample Quantiles of Ozone', ylab = '', 
-     main = 'Empirical Cumluative Distribution\nOzone Pollution in New York')
+DataFraFirst %>% group_by(SUBJECTINDEX) %>% summarise(numCen = sum(UnCen==0)) %>%
+  ggplot(aes(x=SUBJECTINDEX, y=numCen)) + geom_bar(stat="identity")
 
+i = 29
+i = 24
 
-n = sum(!is.na(ozone))
-ozone.ordered = sort(ozone)
-plot(ozone.ordered, (1:n)/n, type = 's', ylim = c(0, 1), 
-     xlab = 'Sample Quantiles of Ozone', ylab = '', 
-     main = 'Empirical Cumluative Distribution\nOzone Pollution in New York')
+DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+my_surv_i = Surv(time=DataFraFirst_i$Duration,
+                 event=DataFraFirst_i$UnCen)
+my_fit_i  = survfit(formula = my_surv_i ~ 1, data=my_surv_i)
+my_fit_summ_i = summary(my_fit_i)
+obs_time = my_fit_summ_i$time  # t_i
+n_risk   = my_fit_summ_i$n.risk # Y_i
+n_event = my_fit_summ_i$n.event # d_i
+KM_surv = my_fit_summ_i$surv
 
-# mark the 3rd quartile
-abline(v = 62.5, h = 0.75)
-
-# add a legend
-legend(65, 0.7, '3rd Quartile = 63.5', box.lwd = 0)
-
-# add the label on the y-axis
-mtext(text = expression(hat(F)[n](x)), side = 2, line = 2.5)
-
+incr = n_event / n_risk  # d_i / y_i
+NA_cumhzd = NULL  # initialize
+for (j in 1:length(obs_time)) NA_cumhzd[j] = sum(incr[1:j])
+NA_surv = exp(-NA_cumhzd)
 
 
+DurECDF = ecdf(DataFraFirst_i$Duration)
+ecdfRes = 1 - DurECDF(obs_time)
+
+obs_time[180:length(obs_time)]
+
+ggplot(NULL, aes(x=obs_time)) + 
+  geom_step(aes(y=NA_surv), linetype=1, color='red',alpha=0.5) + 
+  geom_step(aes(y=ecdfRes), linetype=1, color='blue',alpha=0.5) +
+  ylab('Probability') + xlab('time') +  
+  theme_light()
 
 
+
+
+# Dependency over the pictures?
+i = 3
+DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+CountPic = data.frame(DataFraFirst_i, 
+                      faceCNT=ave(rep(1,length(DataFraFirst_i$SUBJECTINDEX)),
+                                  DataFraFirst_i$SUBJECTINDEX,
+                                  DataFraFirst_i$filenumber,
+                                  FUN = cumsum))
+
+ggplot(CountPic, aes(x=faceCNT, y=Duration, fill=as.factor(UnCen))) +
+  scale_fill_manual(values=cols, aesthetics=c("black", "red")) +
+  geom_point() + theme_light()
+
+lm(Duration ~ faceCNT, CountPic ) %>% summary
 
 
 #++++++++++++++++++++++++
@@ -223,43 +247,9 @@ legend("bottomright", col=c("red", "blue"), lty=c(1, 1),
 
 
 
-
-
 # Comparison Among Event 
 i = 6
 DataFraFirst_i = DataFraFirst[DataFraFirst$SUBJECTINDEX == i, ]
-
-
-#
-
-## 
-
-AnaDataFra %>% filter(SUBJECTINDEX %in% unique(DataFra$SUBJECTINDEX))
-
-
-AnaData = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Learning")
-AnaDataFra = data.frame(SUBJECTINDEX=AnaData$SUBJECTINDEX[1,], 
-                        trial = AnaData$trial[1,], 
-                        filenumber = AnaData$filenumber[1,], 
-                        start = AnaData$start[1,], 
-                        end = AnaData$end[1,], 
-                        x = AnaData$x[1,], 
-                        y = AnaData$y[1,],
-                        oddball = AnaData$oddball[1,],
-                        ucs = AnaData$ucs[1,])
-
-AnaDataFra = AnaDataFra %>% mutate(Duration = end - start)
-AnaDataFra = data.frame(AnaDataFra, count=ave(rep(1,length(AnaDataFra$trial)),
-                                              AnaDataFra$SUBJECTINDEX,
-                                              AnaDataFra$trial,
-                                              FUN = cumsum))
-
-AnaDataFraFirst = AnaDataFra[AnaDataFra$count == 1,]
-AnaDataFraFirst = AnaDataFraFirst %>% mutate(UnCen = (end < 1450))
-
-
-
-
 
 
 # Concerns about censoring

@@ -27,6 +27,32 @@ plot(A, B) # Different Participants! -> thus not applicable! :(
 
 
 
+AnaDataFra %>% filter(SUBJECTINDEX %in% unique(DataFra$SUBJECTINDEX))
+
+
+AnaData = h5read("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/etdb_v1.0.hdf5", "/Face Learning")
+AnaDataFra = data.frame(SUBJECTINDEX=AnaData$SUBJECTINDEX[1,], 
+                        trial = AnaData$trial[1,], 
+                        filenumber = AnaData$filenumber[1,], 
+                        start = AnaData$start[1,], 
+                        end = AnaData$end[1,], 
+                        x = AnaData$x[1,], 
+                        y = AnaData$y[1,],
+                        oddball = AnaData$oddball[1,],
+                        ucs = AnaData$ucs[1,])
+
+AnaDataFra = AnaDataFra %>% mutate(Duration = end - start)
+AnaDataFra = data.frame(AnaDataFra, count=ave(rep(1,length(AnaDataFra$trial)),
+                                              AnaDataFra$SUBJECTINDEX,
+                                              AnaDataFra$trial,
+                                              FUN = cumsum))
+
+AnaDataFraFirst = AnaDataFra[AnaDataFra$count == 1,]
+AnaDataFraFirst = AnaDataFraFirst %>% mutate(UnCen = (end < 1450))
+
+
+
+
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 # Mixed Effect
 coxme(Part_surv ~ 
@@ -69,6 +95,34 @@ geom_bar(aes(fill = variable), position = "dodge", stat="identity")
 # Frailty Model
 m3 <- coxph(Surv(time1, time2, mortality) ~ age + sex + transplant + frailty(ID, 
                                                                              distribution = "gaussian", sparse = FALSE, method = "reml"), data = dat)
+
+
+# Censoring's effect
+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
+obs_time[180:length(obs_time)]
+
+ggplot(NULL, aes(x=obs_time[200:length(obs_time)])) + 
+  geom_step(aes(y=NA_surv[200:length(obs_time)]), linetype=1, color='red',alpha=0.5) + 
+  geom_step(aes(y=ecdfRes[200:length(obs_time)]), linetype=1, color='blue',alpha=0.5) +
+  ylab('Probability') + xlab('time') + ylim(0:1) +
+  theme_light()
+
+plot(c(0, max(obs_time)+10), c(0,1), type="n", xlab="Time",
+     ylab="Survival probability",
+     main="Comparing two estimators for survival function") ;
+points(obs_time, NA_surv, type="s", col="red", lty=1)
+points(obs_time, ecdfRes, type="s", col="blue", lty=1) 
+
+
+# ROI
+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#
+
+DataFraFirst_ROI %>% 
+  group_by(SUBJECTINDEX, filenumber) %>%
+  summarise(CNT = n(),
+            MeanRes = mean(Duration),
+            UnCens = mean(UnCen)) %>%
+  filter(UnCens != 1) %>% print(n=52)
 
 
 
@@ -276,7 +330,4 @@ SuvvFit$time
 
 cumsum(SuvvFit$n.event/SuvvFit$n.risk)
 
-
-
-##
 
