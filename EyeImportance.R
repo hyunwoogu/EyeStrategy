@@ -6,9 +6,12 @@ expMLEfinder = function(x_de, y_de, xWin, yWin)
   Dat = DataFraFirst %>% filter(x >= x_de & x < x_de + xWin,
                                 y >= y_de & y < y_de + yWin) %>% 
     dplyr::select(Duration, UnCen)
-  foo = survreg(Surv(Duration, UnCen) ~1, data=Dat, dist="exponential")
+
+  numer = sum(Dat$Duration)
+  denom = sum(Dat$UnCen)
   
-  return(exp(1/(foo$coef)))
+  if (denom == 0) return(0)
+  return(numer/denom)
 }
 
 numSliceX = 50
@@ -77,6 +80,8 @@ for (j in SegsY)
     res = c(res, weibMLEfinder(i,j, XwinSize, YwinSize))
   }
 }
+
+res1 = read.csv("WeibHeat.csv")
 
 res1 = matrix(res, nrow=numSliceY, ncol=numSliceX, byrow=T)
 res2= apply(res1,2,rev)
