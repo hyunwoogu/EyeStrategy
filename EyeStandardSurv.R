@@ -7,6 +7,7 @@ library(coxme)
 library(KMsurv)
 library(muhaz)
 library(plyr)
+library(parfm)
 
 #++++++++++++++++++++++++
 # Survival plot by participants
@@ -130,8 +131,23 @@ ggplot(CountPic, aes(x=faceCNT, y=Duration, fill=as.factor(UnCen))) +
 lm(Duration ~ faceCNT, CountPic ) %>% summary
 
 
+
+## Positive correlation between # of censoring & mean Duration
+DataFraFirst %>% group_by(SUBJECTINDEX) %>% 
+  summarise(NumCensored = sum(UnCen==0),
+            meanDur = mean(Duration)) %>% ggplot(aes(x=NumCensored, y=meanDur, 
+                                                     col=as.factor(SUBJECTINDEX))) +
+  geom_point()
+
+
+
+# +++++++ 
+# Hazard (NA) plot by participants
+
+
+
 #++++++++++++++++++++++++
-# Hazard plot by participants
+# Hazard (Kernel) plot by participants
 
 DataFraFirst_i
 KF_i = muhaz(times=DataFraFirst_i$Duration, 
@@ -239,116 +255,6 @@ ggplot(data=res) +
 #++++++++++++++++++++++++++++++++
 # Participant-based : Is log-logistic? Is Weibull? : Hypothesis-driven !!
 
-
-
-# 
-data_frame(obs_time)
-
-##
-aggregate()
-
-
-
-##
-plot(c(0, max(obs_time)+10), c(0,1), type="n", xlab="Time",
-     ylab="Survival probability",
-     main="Comparing two estimators for survival function") ;
-points(obs_time, KM_surv, type="s", col="red", lty=1) ; 
-points(obs_time, NA_surv, type="s", col="blue", lty=1) ; 
-legend("bottomright", col=c("red", "blue"), lty=c(1, 1), 
-       c("K-M estimator", "exp(-{N-A esetimator})")) ;
-
-
-
-# Comparison Among Event 
-i = 6
-DataFraFirst_i = DataFraFirst[DataFraFirst$SUBJECTINDEX == i, ]
-
-
-# Concerns about censoring
-
-## Positive correlation between # of censoring & mean Duration
-DataFraFirst %>% group_by(SUBJECTINDEX) %>% 
-  summarise(NumCensored = sum(UnCen==0),
-            meanDur = mean(Duration)) %>% ggplot(aes(x=NumCensored, y=meanDur, 
-                                                     col=as.factor(SUBJECTINDEX))) +
-  geom_point()
-
-
-
-
-## Whole-Data Analysis
-my_surv = Surv(time=DataFraFirst$Duration,
-               event=DataFraFirst$UnCen)
-my_fit = survfit(formula = my_surv ~ 1, data=my_surv) ;
-
-my_surv = Surv(time=data$t2, event=data$d3) ;
-my_fit = survfit(formula = my_surv ~ 1, data=my_surv) ;
-
-my_fit_summ = summary(my_fit) ;
-my_fit_summ
-my_fit_summ$time     # t_i's : the distinct uncensored timepoints
-my_fit_summ$surv     # the Kaplan-Meier estimate at each t_i's
-my_fit_summ$n.risk   # Y_i's
-my_fit_summ$n.event  # d_i's
-my_fit_summ$std.err  # standard error of the K-M estimate at t_i
-my_fit_summ$lower    # lower bound of pointwise CI bound
-
-
-obs_time = my_fit_summ$time ; # t_i
-n_risk = my_fit_summ$n.risk ; # Y_i
-n_event = my_fit_summ$n.event ; # d_i
-KM_surv = my_fit_summ$surv ;    #\hat{S}(t_i)
-
-incr = n_event / n_risk ; # d_i / y_i
-NA_cumhzd = NULL ; # initialize
-for (i in 1:length(obs_time)) NA_cumhzd[i] = sum(incr[1:i]) ;
-NA_surv = exp(-NA_cumhzd) ;
-
-windows(width=6, height=6) ;
-plot(c(0, max(obs_time)+10), c(0,1), type="n", xlab="Time",
-     ylab="Survival probability",
-     main="Comparing two estimators for survival function") ;
-points(obs_time, KM_surv, type="s", col="red", lty=1) ; 
-points(obs_time, NA_surv, type="s", col="blue", lty=1) ; 
-legend("topright", col=c("red", "blue"), lty=c(1, 1), 
-       c("K-M estimator", "exp(-{N-A esetimator})")) ;
-
-
-incr_GW = n_event / n_risk / (n_risk - n_event)
-var_GW = NULL
-for (i in 1:length(obs_time)) var_GW[i] = sum(incr_GW[1:i]) ;
-incr_NA = n_event / n_risk^2 ;
-var_NA = NULL ;
-for (i in 1:length(obs_time)) var_NA[i] = sum(incr_NA[1:i]) ;
-
-sqrt(var_GW * KM_surv^2)
-my_fit_summ$std.err
-
-gamma = qnorm(0.975) ;
-std_NA = sqrt(var_NA) ;
-up_NA = exp(- NA_cumhzd + gamma*std_NA) ;
-lo_NA = exp(- NA_cumhzd - gamma*std_NA) ;
-
-stderr_GW = KM_surv * sqrt(var_GW) ;
-up_GW = KM_surv + gamma*stderr_GW ;
-lo_GW = KM_surv - gamma*stderr_GW ;
-
-windows(width=6, height=6) ;
-plot(c(0, max(obs_time)+10), c(0,1), type="n", xlab="Time",
-     ylab="Survival probability",
-     main="Comparing two estimators for survival function") ;
-points(obs_time, KM_surv, type="s", col="red", lty=1) ; 
-points(obs_time, up_GW, type="s", col="red", lty=2) ; 
-points(obs_time, lo_GW, type="s", col="red", lty=2) ; 
-points(obs_time, NA_surv, type="s", col="blue", lty=1) ; 
-points(obs_time, up_NA, type="s", col="blue", lty=2) ; 
-points(obs_time, lo_NA, type="s", col="blue", lty=2) ; 
-legend("topright", col=c("red", "blue"), lty=c(1, 1), 
-       c("K-M estimator", "exp(-{N-A esetimator})")) ; 
-
-
-
 ##
 par(mfrow=c(4,2))
 
@@ -409,123 +315,9 @@ for (i in (DataFraFirst$SUBJECTINDEX %>% unique))
 }
 
 
-### Participant Censored at least Once
-CenAtLeastOnce = DataFraFirst %>%
-  group_by(SUBJECTINDEX) %>%
-  summarise(CenAtLeastOnce = (sum(UnCen)<400))
 
-print(CenAtLeastOnce, n=29)
-
-
-###
-incr_GW = n_event / n_risk / (n_risk - n_event)
-var_GW = NULL
-for (i in 1:length(obs_time)) var_GW[i] = sum(incr_GW[1:i]) ;
-incr_NA = n_event / n_risk^2 ;
-var_NA = NULL ;
-for (i in 1:length(obs_time)) var_NA[i] = sum(incr_NA[1:i]) ;
-
-sqrt(var_GW * KM_surv^2)
-my_fit_summ$std.err
-
-gamma = qnorm(0.975) ;
-std_NA = sqrt(var_NA) ;
-up_NA = exp(- NA_cumhzd + gamma*std_NA) ;
-lo_NA = exp(- NA_cumhzd - gamma*std_NA) ;
-
-stderr_GW = KM_surv * sqrt(var_GW) ;
-up_GW = KM_surv + gamma*stderr_GW ;
-lo_GW = KM_surv - gamma*stderr_GW ;
-
-windows(width=6, height=6) ;
-plot(c(0, max(obs_time)+10), c(0,1), type="n", xlab="Time",
-     ylab="Survival probability",
-     main="Comparing two estimators for survival function") ;
-points(obs_time, KM_surv, type="s", col="red", lty=1) ; 
-points(obs_time, up_GW, type="s", col="red", lty=2) ; 
-points(obs_time, lo_GW, type="s", col="red", lty=2) ; 
-points(obs_time, NA_surv, type="s", col="blue", lty=1) ; 
-points(obs_time, up_NA, type="s", col="blue", lty=2) ; 
-points(obs_time, lo_NA, type="s", col="blue", lty=2) ; 
-legend("topright", col=c("red", "blue"), lty=c(1, 1), 
-       c("K-M estimator", "exp(-{N-A esetimator})")) ; 
-
-
-# Fit (complexe) survival curves
+# Fit (complex) survival curves
 #++++++++++++++++++++++++++++++++++++
-
-fit3 <- survfit( Surv(time, status) ~ sex + rx + adhere,
-                 data = colon )
-
-# Visualize: plot survival curves by sex and facet by rx and adhere
-#++++++++++++++++++++++++++++++++++++
-ggsurv <- ggsurvplot(fit3, fun = "cumhaz", conf.int = TRUE)
-ggsurv$plot +theme_bw() + facet_grid(rx ~ adhere)
-
-fit
-ggsurvplot(my_fit, my_surv, facet.by = SUBJECTINDEX, 
-           palette = "jco", pval = TRUE)
-
-
-
-fit2 <- survfit( my_surv ~ Region + SUBJECTINDEX, data = DataFraFirst )
-ggsurv <- ggsurvplot(fit2, conf.int = TRUE)
-
-ggsurv$plot + theme_bw() + facet_wrap(~ SUBJECTINDEX)
-
-surv_summary(fit2)
-
-ggsurvplot()
-
-# Comparing two estimates 
-
-# Fit (complexe) survival curves
-#++++++++++++++++++++++++++++++++++++
-
-require("survival")
-fit3 <- survfit( Surv(time, status) ~ sex + rx + adhere,
-                 data = colon )
-
-# Visualize: plot survival curves by sex and facet by rx and adhere
-#++++++++++++++++++++++++++++++++++++
-ggsurv <- ggsurvplot(fit3, fun = "cumhaz", conf.int = TRUE)
-ggsurv$plot +theme_bw() + facet_grid(rx ~ adhere)
-
-require("survival")
-fit <- survfit( Surv(time, status) ~ sex + rx + adhere,
-                data = colon )
-devtools::install_github("kassambara/survminer")
-
-if(!require(devtools)) install.packages("devtools")
-devtools::install_github("kassambara/survminer", build_vignettes = FALSE)
-
-
-# Visualize
-#++++++++++++++++++++++++++++++++++++
-require("survminer")
-
-ggsurv <- ggsurvplot(fit3, fun = "cumhaz", conf.int = TRUE,
-                     risk.table = TRUE, risk.table.col="strata",
-                     ggtheme = theme_bw())
-# Faceting survival curves
-curv_facet <- ggsurv$plot + facet_grid(rx ~ adhere)
-curv_facet
-
-
-# Log-Rank test 
-
-## [1] Two-sample testing
-
-DataFraFirst = DataFraFirst %>% mutate(Left = DataFraFirst$x < 800,
-                                       Top  = DataFraFirst$y < 600)
-
-
-
-LRsurvObj = Surv(time = DataFraFirst$Duration,
-                 event = DataFraFirst$UnCen)
-
-A = survdiff(LRsurvObj ~ as.factor(DataFraFirst$Left), rho=0)
-survdiff(LRsurvObj ~ as.factor(DataFraFirst$Top), rho=0)
 
 p.val = 1 - pchisq(sdf$chisq, length(sdf$n) - 1) 
 
@@ -547,128 +339,9 @@ for (i in (DataFraFirst$SUBJECTINDEX %>% unique))
 }
 
 
-
-
-
-
 # Parametric Approach
 
-
-
-# Two-sample testing
-
-
-
-test_kidney = survdiff(survobj_kidney ~ as.factor(kidney$type), rho=0)
-test_kidney = survdiff(survobj_kidney ~ kidney$type, rho=0) ;
-test_kidney = survdiff(survobj_kidney ~ type, rho=0, data=kidney) ;
-
-# 
-
-
-## 
-
-
-
-
-survobj.aft = Surv(time=larynx$time, event=larynx$delta, type="right") ; head(survobj.aft)
-regobj.aft = survreg(survobj.aft ~ 1 + factor(larynx$stage) + larynx$age, dist="weibull") ;
-summary(regobj.aft)
-
-
-fit.phfix = coxph(survobj.aft ~  factor(larynx$stage) + larynx$age); #기본값으로 실행
-summary(fit.phfix)
-
-fit.phfix$coefficients
-fit.phfix$var        # I^(-1), the inverse of information matrix
-fit.phfix$loglik        
-
-install.packages("parfm")
-library(parfm)
-
-par.fit=parfm(Surv(DataFraFirst$Duration, 1*DataFraFirst$UnCen)
-              ~ 1 + factor(DataFraFirst$Region), 
-              data=DataFraFirst, dist="weibull")
-par.fit
-
-#baseline hazard
-time=DataFraFirst$Duration
-base.hazard = par.fit[1]*par.fit[2]*time^(par.fit[1]*-1)
-plot(time, base.hazard, type="p")
-
-
-
-data("kidney")
-head(kidney)
-
-
-SurvData = with(DataFraFirst,
-                Surv(time = DataFraFirst$Duration,
-                     event= DataFraFirst$UnCen))
-
-fit.bre = coxph(SurvData ~  Region, 
-                data=DataFraFirst, method="breslow")
-
-(fit.bre.summ = summary(fit.bre))
-
-DataFraFirst$Region %>% table
-
-fit.exact = coxph(SurvData ~  Region, 
-                  data=DataFraFirst, method="exact")
-
-fit.efron = coxph(SurvData ~  Region, 
-                  data=DataFraFirst, method="efron")
-
-res.cox <- coxph(Surv(DataFraFirst$, status) ~ age + sex + wt.loss, data =  lung)
-res.cox
-test.ph <- cox.zph(fit.efron)
-test.ph
-
-survobj.kid = with( kidney, Surv(time=time, event=delta, type="right")); head(survobj.kid)
-
-
-
-fit.bre = coxph(survobj.kid ~  type, init=0.5, data=kidney , method="breslow");
-fit.bre.summ = summary(fit.bre)
-fit.exact = coxph(survobj.kid ~  type, init=0.5, data=kidney , method="exact");
-fit.exact.summ = summary(fit.exact)
-fit.efron = coxph(survobj.kid ~  factor(type), init=0.5, data=kidney , method="efron"); #기본값으로 실행
-
-
-fit.efron.summ = summary(fit.efron)
-
-fit.bre = coxph(survobj.kid ~  type, init=0, data=kidney , method="breslow");
-fit.bre.summ = summary(fit.bre)
-names(fit.bre.summ)
-fit.bre.summ$loglik
-fit.bre.summ$coefficients
-fit.bre.summ$sctest
-fit.bre.summ$waldtest
-fit.bre.summ$logtest
-
-
-
-DataFraFirst_i
-
-DataFraFirst_i$
-
-surv_fit = survfit(my_surv_i ~ Region, data=DataFraFirst_i) 
-
-summary(surv_fit)
-surv_fit$strata
-
-names(fit_kidney)
-fit_kidney$surv
-summ_kidney = summary(fit_kidney) ;
-names(summ_kidney)
-summ_kidney$table
-
-
-test = summary(surv_fit)
-i
-
-
-# Cox PH model
+## strata Plots
 
 strataPlotMaker = function(i)
 {
@@ -715,24 +388,6 @@ strataPlotMaker = function(i)
 }
 
 
-
-rep(c("Else", "EyeL", "EyeR", "Nose"), 
-    diff(c(0, which(diff(obs_time) < 0), length(obs_time))))
-
-obs_time
-    
-my_fit_summ_i
-
-KM_surv %>% length
-
-n_event %>% length
-my_fit_i$strata
-my_fit_summ_i$time %>% length
-Group %>% length
-my_fit_summ_i$n.risk %>% length
-my_fit_summ_i$strata %>% rownames
-obs_time
-
 strataData$Subject %>% table
 
 strataData = NULL
@@ -743,16 +398,6 @@ for (i in unique(DataFraFirst$SUBJECTINDEX))
   indx = indx + 1
   strataData = rbind(strataData, strataPlotMaker(i))
 }
-
-Subject = rep(sprintf("Subject%02d", indx), length(obs_time))
-obsTimes = obs_time
-Nrisk = n_risk
-Nevent = n_event
-KMsv = KM_surv
-Group = rep(c("Else", "EyeL", "EyeR", "Nose")
-            diff(c(0, which(diff(obs_time) < 0), length(obs_time))))) #,
-#upGW = up_GW,
-# loGW = lo_GW)
 
 ggplot(data=strataData, aes(x=obsTimes)) + 
   geom_step(aes(y=KMsv, col=Group), linetype=1,alpha=0.9) + 

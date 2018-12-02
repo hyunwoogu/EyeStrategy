@@ -1,9 +1,13 @@
 # Map of Importance
 
 ## Exponential MLE - Method1
+
+i = 13
+DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+
 expMLEfinder = function(x_de, y_de, xWin, yWin)
 {
-  Dat = DataFraFirst %>% filter(x >= x_de & x < x_de + xWin,
+  Dat = DataFraFirst_i %>% filter(x >= x_de & x < x_de + xWin,
                                 y >= y_de & y < y_de + yWin) %>% 
     dplyr::select(Duration, UnCen)
 
@@ -48,7 +52,7 @@ write.csv(res1, "WeibHeat.csv")
 ## Weibull MLE
 weibMLEfinder = function(x_de, y_de, xWin, yWin)
 {
-  Dat = DataFraFirst %>% filter(x >= x_de & x < x_de + xWin,
+  Dat = DataFraFirst_i %>% filter(x >= x_de & x < x_de + xWin,
                                 y >= y_de & y < y_de + yWin) %>% 
     dplyr::select(Duration, UnCen)
   foo = survreg(Surv(Duration, UnCen) ~1, data=Dat, dist="weibull")
@@ -80,8 +84,6 @@ for (j in SegsY)
     res = c(res, weibMLEfinder(i,j, XwinSize, YwinSize))
   }
 }
-
-res1 = read.csv("WeibHeat.csv")
 
 res1 = matrix(res, nrow=numSliceY, ncol=numSliceX, byrow=T)
 res2= apply(res1,2,rev)

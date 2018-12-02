@@ -25,14 +25,19 @@ regobj.aft2 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         DataFraFirst$start, dist="weibull")
 regobj.aft3 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), dist="weibull")
+regobj.aft32 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                        as.factor(DataFraFirst$SUBJECTINDEX), dist="weibull")
+
 
 summary(regobj.aft1)
 summary(regobj.aft2)
 summary(regobj.aft3)
+summary(regobj.aft32)
 
 extractAIC(regobj.aft1)
 extractAIC(regobj.aft2)
 extractAIC(regobj.aft3)
+extractAIC(regobj.aft32)
 
 
 regobj.aft4 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region), dist="loglogistic")
@@ -51,16 +56,21 @@ extractAIC(regobj.aft6)
 
 
 
+
 ## Cox PH
 fit.phfix1 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region))
 fit.phfix2 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         DataFraFirst$start)
 fit.phfix3 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX))
+fit.phfix32 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                     as.factor(DataFraFirst$SUBJECTINDEX))
+
 
 summary(fit.phfix1)
 summary(fit.phfix2)
 summary(fit.phfix3)
+summary(fit.phfix32)
 
 extractAIC(fit.phfix1)
 extractAIC(fit.phfix2)
@@ -94,6 +104,13 @@ summary(aov(Duration ~ Region, DataFraFirst))
 DataFraFirst %>% group_by(Region) %>% summarise(Me = mean(Duration),
                                                 Med= median(Duration),
                                                 SD = sd(Duration))
+
+
+fit.bre.summ$loglik
+fit.bre.summ$coefficients
+fit.bre.summ$sctest
+fit.bre.summ$waldtest
+fit.bre.summ$logtest
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
