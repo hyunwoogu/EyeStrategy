@@ -50,9 +50,9 @@ DataFraFirst = DataFraFirst %>% mutate(UnCen = (end < 1450))
 
 
 ## Comparison of ROIs
-Region1 = c(560, 420)
-Region2 = c(850, 420)
-Region3 = c(720, 590)
+Region1 = c(550, 420)
+Region2 = c(900, 420)
+Region3 = c(725, 590)
 Region4 = c(720, 740)
 XwinSize = 150
 YwinSize = 150

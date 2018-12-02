@@ -45,14 +45,19 @@ regobj.aft5 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         DataFraFirst$start, dist="loglogistic")
 regobj.aft6 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), dist="loglogistic")
+regobj.aft62 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                        as.factor(DataFraFirst$SUBJECTINDEX), dist="loglogistic")
+
 
 summary(regobj.aft4)
 summary(regobj.aft5)
 summary(regobj.aft6)
+summary(regobj.aft62)
 
 extractAIC(regobj.aft4)
 extractAIC(regobj.aft5)
 extractAIC(regobj.aft6)
+extractAIC(regobj.aft62)
 
 
 
