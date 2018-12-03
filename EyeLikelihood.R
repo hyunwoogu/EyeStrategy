@@ -1,4 +1,4 @@
-# Map of Importance
+# Likelihood Inference 
 
 ## Exponential MLE - Method1
 
