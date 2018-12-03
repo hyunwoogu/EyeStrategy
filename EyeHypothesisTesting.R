@@ -109,7 +109,6 @@ WALD = t(numer) %*% solve(denom) %*% numer
 
 1 - pchisq(q=WALD, df=2)
 
-
 ggplot(DataFraFirst, aes(x=Region, y=Duration)) + geom_boxplot()
 
 DataFraFirst %>% group_by(Region) %>% summarise(Me = mean(Duration),
