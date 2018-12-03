@@ -1,5 +1,54 @@
 # Likelihood Inference 
 
+# Exponential & Weibull Survival Curve
+expSA = function(i)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i) 
+  
+  numer = sum(DataFraFirst_i$Duration)
+  denom = sum(DataFraFirst_i$UnCen)
+  
+  return(numer/denom)
+}
+
+res = NULL
+for (i in 1:29)
+{
+  res = c(res, expSA(i))
+}
+
+
+weibSA = function(i)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i) 
+  
+  foo = survreg(Surv(Duration, UnCen) ~1, 
+                data=DataFraFirst_i, dist="weibull")
+  
+  shape = 1/foo$scale
+  scale = exp(foo$coef)
+  
+  return(scale * gamma(1 + 1/shape))
+}
+
+
+res2 = NULL
+for (i in 1:29)
+{
+  res2 = c(res2, expSA(i))
+}
+
+resData = data.frame(Subject=1:29,
+                     ExponLambda = res)
+
+ggplot(resData) + geom_bar(aes(Subject, ExponLambda),
+                        stat='identity')
+
+
+
+
+
+
 ## Exponential MLE - Method1
 
 i = 13
