@@ -96,6 +96,10 @@ ggplot(data=SurvData, aes(x=obsTimes, color=Subject)) +
 
 
 
+##
+
+
+
 
 ## The Lowest, The Highest
 
@@ -231,11 +235,14 @@ for (i in unique(DataFraFirst$SUBJECTINDEX))
 
 ## is Weibull?
 ggplot(data=is_distData, aes(x=log(obsTimes))) + 
-  geom_line(aes(y=log(NAsv_cumh)), linetype=1,color='blue',alpha=0.5) + 
+#  geom_line(aes(y=log(NAsv_cumh)), linetype=1,color='blue',alpha=0.5) + 
+  geom_point(aes(y=log(NAsv_cumh)), color='blue',alpha=0.5) + 
   geom_abline(aes(intercept=Interccc, slope=Slopeee), color='red') +
   facet_wrap(.~Subject) + 
   ylab('Log(H)') + xlab('Log(time)') +  
   theme_light()
+
+
 
 
 ## is Log-Logistic?
@@ -311,16 +318,14 @@ ggplot(data=hazrdData, aes(x=times)) +
 
 # +++++++ Different Hazard +++++++++ for a specific Participant
 
-i = 8
-i = 11
-i = 13 ##
-i = 16 #
-i = 20
-i = 22
-i = 23
-i = 24
-i = 25
-i = 28
+i = 3 ##
+i = 4
+i = 8 
+i = 11 ##
+i = 12
+i = 13 ###
+
+i = 1
 
 i = i + 1
 DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)

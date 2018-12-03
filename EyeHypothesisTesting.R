@@ -67,9 +67,17 @@ extractAIC(regobj.aft5)
 extractAIC(regobj.aft6)
 extractAIC(regobj.aft62)
 
+summary(coxph(Surv(futime, fustat) ~ age + strata(rx), data=ovarian))
+fit.phfix3_Strata = coxph(survObj ~ 1 + + as.factor(DataFraFirst$Region) +
+                            DataFraFirst$start )
+a = summary(fit.phfix3_Strata)
+b = basehaz(fit.phfix3_Strata)
+b$hazard
+ggplot(b, aes(hazard, time)) + geom_point()
+a$coefficientsZ
+?strata
 
-
-
+?basehaz
 ## Cox PH
 fit.phfix1 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region))
 fit.phfix2 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
