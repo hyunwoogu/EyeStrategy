@@ -17,6 +17,8 @@ for (i in 1:29)
   res = c(res, expSA(i))
 }
 
+foo$var
+
 
 weibSA = function(i)
 {
@@ -39,10 +41,15 @@ for (i in 1:29)
 }
 
 resData = data.frame(Subject=1:29,
-                     ExponLambda = res)
+                     ExponLambda = res,
+                     WeibEV = res2)
 
-ggplot(resData) + geom_bar(aes(Subject, ExponLambda),
-                        stat='identity')
+resDataM = melt(resData, measure.vars=c("ExponLambda", "WeibEV"),
+                variable.name="Estimates")
+
+
+ggplot(resDataM) + geom_bar(aes(Subject, value, fill=Estimates),
+                        stat='identity', position='dodge')
 
 
 

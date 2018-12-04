@@ -9,6 +9,31 @@ library(muhaz)
 library(plyr)
 library(parfm)
 
+#+++++++++++++++++++++++
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+
+#+++++++++++++++++++++++
+DataFraFirst_explore = DataFraFirst
+DataFraFirst_explore$SUBJECTINDEX = sprintf("Subject%02d", DataFraFirst_explore$SUBJECTINDEX)
+DataFraFirst_explore$SUBJECTINDEX[DataFraFirst$UnCen == 0] = "Censored"
+  
+
+ggplot(DataFraFirst_explore, aes(x=Region, y=Duration, color=SUBJECTINDEX)) +
+  scale_color_manual(values=c("gray", gg_color_hue(29))) +
+  geom_boxplot(color="black")+
+  geom_jitter(position=position_jitter(0.2)) +
+  theme_light()
+
+ggplot(DataFraFirst_explore, aes(x=start, y=Duration, color=SUBJECTINDEX)) +
+  scale_color_manual(values=c("gray", gg_color_hue(29))) +
+  geom_point() +
+  theme_light()
+
+
+
 #++++++++++++++++++++++++
 # Survival plot by participants
 
