@@ -123,7 +123,28 @@ ggplot(data=SurvData, aes(x=obsTimes, color=Subject)) +
 
 
 
+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
+## One Participant
 
+SurvData_i = SurvData[SurvData$Subject=="Subject04" | SurvData$Subject=="Subject11", ]
+
+
+ggplot(data=SurvData_i, aes(x=obsTimes)) +
+  geom_step(aes(y=KMsv, colour="K-M estimator"), linetype=1, alpha=0.5, show.legend=TRUE) + 
+  geom_ribbon(aes(ymin=loGW, ymax=upGW, fill="Greenwood"), alpha=0.3, show.legend=TRUE) +
+  geom_step(aes(y=NAsv, colour="exp(-(NelsonAalen))"), linetype=1, alpha=0.5, show.legend=TRUE) +
+  geom_ribbon(aes(ymin=loNA, ymax=upNA, fill="Nelson-Aalen"), alpha=0.3, show.legend=TRUE) +
+  scale_colour_manual(name = "Survival Estimates",
+                      values = c("K-M estimator"="red", "exp(-(NelsonAalen))"="blue")) +
+  facet_wrap(.~Subject, ncol = 1) + 
+  scale_fill_manual(name = "Standard Error",
+                    values =c("Greenwood" = "red", "Nelson-Aalen" = "blue")) +
+  theme_light() + xlim(0, 1500) +
+  ylab('Probability') + xlab('time')
+
+
+
+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
 ## Log-rank tests
 LRtestRes = data.frame(NULL)
 
@@ -154,18 +175,13 @@ LRtestResM$reject = (LRtestResM$value > qchisq(.975, df=3) | LRtestResM$value < 
 
 ggplot(LRtestResM, aes(x=Participant, y=value, fill=Weight, alpha=reject) ) +
   geom_bar(stat="identity", position="dodge") + 
-  scale_alpha_manual(values = c(0.3, .8), guide = FALSE) +
+  scale_alpha_manual(values = c(0.9, .3), guide = FALSE) +
   geom_hline(yintercept = c(qchisq(.025, df=3), qchisq(.975, df=3)), 
              linetype = "dashed", color='red') +
   #  annotate("text", x = 27, y= qchisq(.975, df=3), 
   #           label = paste0("Cutoff")) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-
-
-
 
 
 ## The Lowest, The Highest
