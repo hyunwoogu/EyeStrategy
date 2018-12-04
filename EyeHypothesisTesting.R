@@ -50,22 +50,31 @@ for (i in 1:29)
 regobj.aft1 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region), dist="weibull")
 regobj.aft2 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         DataFraFirst$start, dist="weibull")
-regobj.aft3 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
-                        DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), dist="weibull")
-regobj.aft32 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
-                        as.factor(DataFraFirst$SUBJECTINDEX), dist="weibull")
+
+regobj.aft31 = survreg(survObj ~ 1 + as.factor(DataFraFirst$SUBJECTINDEX), dist="weibull")
+regobj.aft32 = survreg(survObj ~ 1 + DataFraFirst$Region +
+                         as.factor(DataFraFirst$SUBJECTINDEX), dist="weibull")
+regobj.aft33 = survreg(survObj ~ 1 + DataFraFirst$Region +
+                       DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), 
+                       dist="weibull")
 
 
 summary(regobj.aft1)
 test$wald
 summary(regobj.aft2)
 summary(regobj.aft3)
+
+summary(regobj.aft31)
 summary(regobj.aft32)
+summary(regobj.aft33)
 
 extractAIC(regobj.aft1)
 extractAIC(regobj.aft2)
 extractAIC(regobj.aft3)
+
+extractAIC(regobj.aft31)
 extractAIC(regobj.aft32)
+extractAIC(regobj.aft33)
 
 
 regobj.aft4 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region), dist="loglogistic")
@@ -99,9 +108,35 @@ b = basehaz(fit.phfix3_Strata)
 b$hazard
 ggplot(b, aes(hazard, time)) + geom_point()
 a$coefficientsZ
-?strata
 
-?basehaz
+
+
+
+### Each Participant
+i = 1
+i = i + 1
+DataFraFirst_i = DataFraFirst %>% dplyr::filter(SUBJECTINDEX==i)
+survObj_i = Surv(time = DataFraFirst_i$Duration, 
+                 event = DataFraFirst_i$UnCen)
+
+
+regobj.aft1_i = survreg(survObj_i ~ 1 + as.factor(DataFraFirst_i$Region), 
+                        dist="weibull")
+
+regobj.aft2_i = survreg(survObj_i ~ 1 + as.factor(DataFraFirst_i$Region) +
+                          DataFraFirst_i$start, dist="weibull")
+
+diag(regobj.aft1_i$var) %>% sqrt
+
+
+summary(regobj.aft1_i)
+summary(regobj.aft2_i)
+
+extractAIC(regobj.aft1_i)
+extractAIC(regobj.aft2_i)
+
+
+
 ## Cox PH
 fit.phfix1 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region))
 fit.phfix2 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +

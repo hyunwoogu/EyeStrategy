@@ -224,6 +224,72 @@ ggplot(NULL, aes(x=obs_time)) +
   theme_light()
 
 
+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
+AFTcoeff1 = data.frame(NULL)
+for (i in 1:29)
+{
+  DataFraFirst_i = DataFraFirst %>% dplyr::filter(SUBJECTINDEX==i)
+  survObj_i = Surv(time = DataFraFirst_i$Duration, 
+                   event = DataFraFirst_i$UnCen)
+  
+  regobj.aft1_i = survreg(survObj_i ~ 1 + as.factor(DataFraFirst_i$Region), 
+                          dist="weibull")
+  c0 = rep(sprintf("Subject%02d", i), 5)
+  c1 = c("Intercept", "EyeL", "EyeR", "Nose", "Log(Scale)")
+  c2 = c(regobj.aft1_i$coefficients, log(regobj.aft1_i$scale))
+  c3 = (diag(regobj.aft1_i$var) %>% sqrt)
+  AFTcoeff1 = rbind(AFTcoeff1, cbind(c0, c1, c2, c3))
+}
+
+
+names(AFTcoeff1) = c("Subject", "Variable", "Estimate", "SE")
+AFTcoeff1$Estimate = as.numeric(as.numeric(levels(AFTcoeff1$Estimate))[AFTcoeff1$Estimate])
+AFTcoeff1$SE = as.numeric(as.numeric(levels(AFTcoeff1$SE))[AFTcoeff1$SE])
+AFTcoeff1$Variable = factor(AFTcoeff1$Variable, levels=c("EyeL", "EyeR", "Nose", "Intercept", "Log(Scale)"))
+
+ggplot(AFTcoeff1, aes(x=Subject, y=Estimate, color=Variable)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = Estimate-SE, ymax = Estimate+SE), width = 0.2) +
+  facet_wrap(.~Variable, ncol=1, scales = "free_y") +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+AFTcoeff2 = data.frame(NULL)
+for (i in 1:29)
+{
+  DataFraFirst_i = DataFraFirst %>% dplyr::filter(SUBJECTINDEX==i)
+  survObj_i = Surv(time = DataFraFirst_i$Duration, 
+                   event = DataFraFirst_i$UnCen)
+  
+  regobj.aft2_i = survreg(survObj_i ~ 1 + as.factor(DataFraFirst_i$Region) +
+                            DataFraFirst_i$start, dist="weibull")
+  
+  c0 = rep(sprintf("Subject%02d", i), 6)
+  c1 = c("Intercept", "EyeL", "EyeR", "Nose", "TTFF", "Log(Scale)")
+  c2 = c(regobj.aft2_i$coefficients, log(regobj.aft2_i$scale))
+  c3 = (diag(regobj.aft2_i$var) %>% sqrt)
+  AFTcoeff2 = rbind(AFTcoeff2, cbind(c0, c1, c2, c3))
+}
+
+names(AFTcoeff2) = c("Subject", "Variable", "Estimate", "SE")
+AFTcoeff2$Estimate = as.numeric(as.numeric(levels(AFTcoeff2$Estimate))[AFTcoeff2$Estimate])
+AFTcoeff2$SE = as.numeric(as.numeric(levels(AFTcoeff2$SE))[AFTcoeff2$SE])
+AFTcoeff2$Variable = factor(AFTcoeff2$Variable, 
+                            levels=c("EyeL", "EyeR", "Nose", "TTFF", "Intercept", "Log(Scale)"))
+
+cols = c(gg_color_hue(5)[1:3], "orange", gg_color_hue(5)[4:5])
+ggplot(AFTcoeff2, aes(x=Subject, y=Estimate, color=Variable)) +
+  geom_point() +
+  scale_color_manual(values=cols) + 
+  geom_errorbar(aes(ymin = Estimate-SE, ymax = Estimate+SE), width = 0.2) +
+  facet_wrap(.~Variable, ncol=1, scales = "free_y") +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # No dependency over the pictures
 i = 3
