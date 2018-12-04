@@ -20,11 +20,45 @@ sumStat$table
 comp(ten(survFit),  p=c(0, 1, 1, 0.5, 0.5), q=c(1, 0, 1, 0.5, 2))
 
 i = i + 1
-DataFraFirst_i = DataFraFirst %>% dplyr::filter(SUBJECTINDEX==i)
-survObj_i = Surv(time = DataFraFirst_i$Duration, 
-               event = DataFraFirst_i$UnCen)
+i = 1
 survFit_i = survfit(survObj_i ~ DataFraFirst_i$Region)
-comp(ten(survFit_i),  p=c(0, 1, 1, 0.5, 0.5), q=c(1, 0, 1, 0.5, 2))
+a = comp(ten(survFit_i, reCalc=F),  p=c(0, 1, 1, 0.5, 0.5), q=c(1, 0, 1, 0.5, 2))
+
+
+### LRT plot
+
+LRTplot = data.frame(rho0 = NULL,
+                     rho1 = NULL)
+
+for (i in 1:29)
+{
+  DataFraFirst_i = DataFraFirst %>% dplyr::filter(SUBJECTINDEX==i)
+  survObj_i = Surv(time = DataFraFirst_i$Duration, 
+                   event = DataFraFirst_i$UnCen)
+  testSurvDiff_i_0 = survdiff(survObj_i ~ DataFraFirst_i$Region, rho=0)
+  testSurvDiff_i_1 = survdiff(survObj_i ~ DataFraFirst_i$Region, rho=1)
+  
+  LRTplot = rbind(LRTplot, c(testSurvDiff_i_0$chisq,
+           testSurvDiff_i_1$chisq))
+}
+
+names(LRTplot) = c("rho0", "rho1")
+
+DataFraFirst$filenumber %>% unique %>% length
+
+qchisq(.975, df=3)
+
+
+### comp : attribute not accessible
+for (i in 1:29)
+{
+  DataFraFirst_i = DataFraFirst %>% dplyr::filter(SUBJECTINDEX==i)
+  survObj_i = Surv(time = DataFraFirst_i$Duration, 
+                   event = DataFraFirst_i$UnCen)
+  survFit_i = survfit(survObj_i ~ DataFraFirst_i$Region)
+  comp(ten(survFit_i),  p=c(0, 1, 0), q=c(0, 0, 1))
+}
+
 
 ## AFT 
 regobj.aft1 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region), dist="weibull")
@@ -71,6 +105,9 @@ summary(coxph(Surv(futime, fustat) ~ age + strata(rx), data=ovarian))
 fit.phfix3_Strata = coxph(survObj ~ 1 + + as.factor(DataFraFirst$Region) +
                             DataFraFirst$start )
 a = summary(fit.phfix3_Strata)
+
+a 
+
 b = basehaz(fit.phfix3_Strata)
 b$hazard
 ggplot(b, aes(hazard, time)) + geom_point()
@@ -106,6 +143,16 @@ extractAIC(fit.phfix3)
 extractAIC(fit.phfix3)
 extractAIC(fit.phfix32)
 extractAIC(fit.phfix33)
+
+
+C = matrix(c(1, -1, 0, 0,
+             0, -1, 1, 0), nrow=2, byrow=TRUE)
+
+numer = C %*% a$coefficients
+denom = C %*% a$ %*% t(C)
+WALD = t(numer) %*% solve(denom) %*% numer
+
+1 - pchisq(q=WALD, df=2)
 
 
 C = matrix(c(1, -1, rep(0, 30),

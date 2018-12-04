@@ -11,6 +11,8 @@ library(parfm)
 
 #++++++++++++++++++++++++
 # Survival plot by participants
+
+
 survPlotMaker = function(i)
 {
   DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
@@ -97,6 +99,8 @@ ggplot(data=SurvData, aes(x=obsTimes, color=Subject)) +
 
 
 ##
+
+
 
 
 
