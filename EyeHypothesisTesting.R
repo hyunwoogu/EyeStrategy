@@ -15,66 +15,6 @@ survFit = survfit(survObj ~ DataFraFirst$Region)
 sumStat = summary(survFit)
 sumStat$table
 
-## Log-rank tests
-a = comp(ten(survFit, call = NULL),  p=c(0, 1, 1, 0.5, 0.5), q=c(1, 0, 1, 0.5, 2))
-
-l1 = ten(survFit, call = NULL)
-b = attr(l1, "lrw")
-
-
-
-comp(l1, p=c(0, 1, 1, 0.5, 0.5), q=c(1, 0, 1, 0.5, 2))
-a = attr(l1, "tft") 
-a$tft %>% class
-l1$tft
-
-
-LRtestRes = data.frame(NULL)
-
-for (i in 1:29)
-{
-  DataFraFirst_i = DataFraFirst %>% dplyr::filter(SUBJECTINDEX==i)
-  
-  survObj_i = Surv(time = DataFraFirst_i$Duration, 
-                   event = DataFraFirst_i$UnCen)
-  survFit_i = survfit(survObj_i ~ DataFraFirst_i$Region)
-  
-  assign(sprintf("lr%02d", i), ten(survFit_i, call = NULL))  
-  comp(get(sprintf("lr%02d", i)),  p=c(0, 1, 1, 0.5, 0.5), q=c(1, 0, 1, 0.5, 2))
-  
-  chis = attr(get(sprintf("lr%02d", i)), "lrt")
-  res = (chis[c(1,6,7), ] %>% unlist)[c(4:6)] %>% as.numeric
-  
-  LRtestRes = rbind(LRtestRes, res)
-}
-
-names(LRtestRes) = c("LogRank", "FHp0q1", "RHp1q0")
-
-LRtestRes = rownames_to_column(LRtestRes, var="Participant")
-LRtestRes$Participant = sprintf("Subject%02d", as.numeric(LRtestRes$Participant))
-
-LRtestResM = melt(LRtestRes, measure.vars = c("LogRank", "FHp0q1", "RHp1q0"),
-                  variable.name="Weight")
-
-ggplot(LRtestResM, aes(x=Participant, y=value, fill=Weight) ) +
-  geom_bar(stat="identity", position="dodge", alpha=.6) + 
-  geom_hline(yintercept = qchisq(.975, df=3), linetype = "dashed", color='red') +
-#  annotate("text", x = 27, y= qchisq(.975, df=3), 
-#           label = paste0("Cutoff")) +
-  theme_classic() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-
-geom_hline(mapping = NULL, data = NULL, ..., yintercept,
-           na.rm = FALSE, show.legend = NA)
-
-
-i = i + 1
-i = 1
-survFit_i = survfit(survObj_i ~ DataFraFirst_i$Region)
-a = comp(ten(survFit_i, reCalc=F),  p=c(0, 1, 1, 0.5, 0.5), q=c(1, 0, 1, 0.5, 2))
-
 
 ### LRT plot
 LRTplot = data.frame(rho0 = NULL,
@@ -93,12 +33,6 @@ for (i in 1:29)
 }
 
 names(LRTplot) = c("rho0", "rho1")
-
-DataFraFirst$filenumber %>% unique %>% length
-
-
-
-survdiff(survObj ~ DataFraFirst$Region, rho=0)
 
 
 ### comp : attribute not accessible

@@ -123,7 +123,45 @@ ggplot(data=SurvData, aes(x=obsTimes, color=Subject)) +
 
 
 
-##
+
+## Log-rank tests
+LRtestRes = data.frame(NULL)
+
+for (i in 1:29)
+{
+  DataFraFirst_i = DataFraFirst %>% dplyr::filter(SUBJECTINDEX==i)
+  
+  survObj_i = Surv(time = DataFraFirst_i$Duration, 
+                   event = DataFraFirst_i$UnCen)
+  survFit_i = survfit(survObj_i ~ DataFraFirst_i$Region)
+  
+  assign(sprintf("lr%02d", i), ten(survFit_i, call = NULL))  
+  comp(get(sprintf("lr%02d", i)),  p=c(0, 1, 1, 0.5, 0.5), q=c(1, 0, 1, 0.5, 2))
+  
+  chis = attr(get(sprintf("lr%02d", i)), "lrt")
+  res = (chis[c(1,6,7), ] %>% unlist)[c(4:6)] %>% as.numeric
+  
+  LRtestRes = rbind(LRtestRes, res)
+}
+
+names(LRtestRes) = c("LogRank", "FHp0q1", "FHp1q0")
+LRtestRes = rownames_to_column(LRtestRes, var="Participant")
+LRtestRes$Participant = sprintf("Subject%02d", as.numeric(LRtestRes$Participant))
+
+LRtestResM = melt(LRtestRes, measure.vars = c("LogRank", "FHp0q1", "FHp1q0"),
+                  variable.name="Weight")
+LRtestResM$reject = (LRtestResM$value > qchisq(.975, df=3) | LRtestResM$value < c(qchisq(.025, df=3)))
+
+ggplot(LRtestResM, aes(x=Participant, y=value, fill=Weight, alpha=reject) ) +
+  geom_bar(stat="identity", position="dodge") + 
+  scale_alpha_manual(values = c(0.3, .8), guide = FALSE) +
+  geom_hline(yintercept = c(qchisq(.025, df=3), qchisq(.975, df=3)), 
+             linetype = "dashed", color='red') +
+  #  annotate("text", x = 27, y= qchisq(.975, df=3), 
+  #           label = paste0("Cutoff")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 
 
 
@@ -340,6 +378,11 @@ for (i in unique(DataFraFirst$SUBJECTINDEX))
 ggplot(data=hazrdData, aes(x=times)) + 
   geom_line(aes(y=hazrd), linetype=1,color='black',alpha=0.5) + 
   facet_wrap(.~Subject) + 
+  ylab('hazard') + xlab('time') +  
+  theme_light()
+
+ggplot(hazrdData, aes(x=times, y=hazrd, color=Subject)) +
+  geom_line(linetype=1, alpha=0.5) +
   ylab('hazard') + xlab('time') +  
   theme_light()
 
