@@ -36,7 +36,9 @@ ggplot(DataFraFirst_explore, aes(x=start, y=Duration, color=SUBJECTINDEX)) +
 
 #++++++++++++++++++++++++
 # Survival plot by participants
+my_fit_summ_i$table
 
+head(SurvData)
 
 survPlotMaker = function(i)
 {
@@ -71,6 +73,8 @@ survPlotMaker = function(i)
   up_GW = KM_surv + gamma*stderr_GW
   lo_GW = KM_surv - gamma*stderr_GW
   
+  
+  
   res = data.frame(Subject = sprintf("Subject%02d", indx),
                     obsTimes = obs_time,
                     Nrisk = n_risk,
@@ -81,6 +85,7 @@ survPlotMaker = function(i)
                     loNA = lo_NA,
                     upGW = up_GW,
                     loGW = lo_GW)
+  
   
   return(res)
 }
@@ -93,6 +98,7 @@ for (i in unique(DataFraFirst$SUBJECTINDEX))
   indx = indx + 1
   SurvData = rbind(SurvData, survPlotMaker(i))
 }
+
 
 ggplot(data=SurvData, aes(x=obsTimes)) + 
   geom_step(aes(y=KMsv), linetype=1,color='red',alpha=0.5) + 
@@ -123,10 +129,129 @@ ggplot(data=SurvData, aes(x=obsTimes, color=Subject)) +
 
 
 
-#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
-## One Participant
+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
+# Meds 
 
-SurvData_i = SurvData[SurvData$Subject=="Subject04" | SurvData$Subject=="Subject11", ]
+MedData = NULL
+for (p in 1:29)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==p)
+  my_surv_i = Surv(time=DataFraFirst_i$Duration,
+                   event=DataFraFirst_i$UnCen)
+  my_fit_i  = survfit(formula = my_surv_i ~ 1, data=my_surv_i)
+  my_fit_summ_i = summary(my_fit_i)
+  obs_time = my_fit_summ_i$time  # t_i
+  n_risk   = my_fit_summ_i$n.risk # Y_i
+  n_event = my_fit_summ_i$n.event # d_i
+  KM_surv = my_fit_summ_i$surv   #\hat{S}(t_i)
+  
+  incr = n_event / n_risk  # d_i / y_i
+  NA_cumhzd = NULL  # initialize
+  for (j in 1:length(obs_time)) NA_cumhzd[j] = sum(incr[1:j])
+  NA_surv = exp(-NA_cumhzd)
+  
+  incr_GW = n_event / n_risk / (n_risk - n_event)
+  var_GW = NULL
+  for (i in 1:length(obs_time)) var_GW[i] = sum(incr_GW[1:i])
+  incr_NA = n_event / n_risk^2
+  var_NA = NULL
+  for (i in 1:length(obs_time)) var_NA[i] = sum(incr_NA[1:i])
+  
+  gamma = qnorm(0.975)
+  std_NA = sqrt(var_NA)
+  up_NA = exp(- NA_cumhzd + gamma*std_NA)
+  lo_NA = exp(- NA_cumhzd - gamma*std_NA)
+  
+  stderr_GW = KM_surv * sqrt(var_GW)
+  up_GW = KM_surv + gamma*stderr_GW
+  lo_GW = KM_surv - gamma*stderr_GW
+  
+  res = data.frame(obsTimes = obs_time,
+                   Nrisk = n_risk,
+                   Nevent = n_event,
+                   KMsv = KM_surv,
+                   NAsv = NA_surv,
+                   upNA = up_NA,
+                   loNA = lo_NA,
+                   upGW = up_GW,
+                   loGW = lo_GW)
+  
+  indxx = findInterval(my_fit_summ_i$table["median"], res$obsTimes)
+  res2 = data.frame(Subject = sprintf("Subject%02d", p),
+                    Med = my_fit_summ_i$table["median"],
+                    NAup = res$upNA[indxx],
+                    NAlo = res$loNA[indxx],
+                    GWup = res$upGW[indxx],
+                    GWlo = res$loGW[indxx])
+  
+  MedData = rbind(MedData, res2)
+}
+
+
+MedData %>% arrange(desc(Med)) %>% 
+  ggplot(aes(y=Med, x=Subject, color=Subject)) + 
+  geom_point() + 
+  # geom_errorbar(aes(ymin = NAlo, ymax = NAup, fill="red"), width = 0.2) +
+  # geom_errorbar(aes(ymin = GWlo, ymax = GWup, fill="blue"), width = 0.2) +
+  coord_flip() +
+  theme_light() +
+  xlab('Median Survival Time') +
+  theme(axis.text.y = element_text(angle = 45, hjust = 1)) +
+  ggtitle("Median Survival Time of Subjects") +
+  theme(plot.title=element_text(hjust=.5, size=15))
+
+
+ggplot(AFTcoeff1, aes(x=Subject, y=Estimate, color=Variable)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = Estimate-SE, ymax = Estimate+SE), width = 0.2) +
+  facet_wrap(.~Variable, ncol=1, scales = "free_y") +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+my_fit_summ_i$table["median"]
+quantile(my_fit_i, .25)
+
+res[indxx, "obsTimes"]
+
+MedData2 = NULL
+for (i in 1:29)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+  my_surv_i = Surv(time=DataFraFirst_i$Duration,
+                   event=DataFraFirst_i$UnCen)
+  my_fit_i  = survfit(formula = my_surv_i ~ 1, data=my_surv_i)
+
+  res = data.frame(Subject = sprintf("Subject%02d", i),
+                   FirstQuant = quantile(my_fit_i, c(.25, .5, .75))$quantile[1],
+                   Med = quantile(my_fit_i, c(.25, .5, .75))$quantile[2],
+                   ThirdQuant = quantile(my_fit_i, c(.25, .5, .75))$quantile[3])
+  
+  MedData2 = rbind(MedData2, res)
+}
+
+
+
+
+MedData2 %>% arrange(desc(Med)) %>% 
+  ggplot(aes(y=Med, x=Subject, color=Subject)) + 
+  geom_point() + 
+  geom_errorbar(aes(ymin = FirstQuant, ymax = ThirdQuant, color=Subject), width=.2, alpha=.7) +
+  # geom_errorbar(aes(ymin = GWlo, ymax = GWup, fill="blue"), width = 0.2) +
+  coord_flip() +
+  theme_light() +
+  ylab('Median Survival Time(ms)') +
+  theme(axis.text.y = element_text(angle = 45, hjust = 1)) +
+  ggtitle("Median Survival Time of Subjects") +
+  theme(plot.title=element_text(hjust=.5, size=15))
+
+
+
+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
+## Two Participants
+
+SurvData_i = SurvData[SurvData$Subject=="Subject04" | SurvData$Subject=="Subject19", ]
 
 
 ggplot(data=SurvData_i, aes(x=obsTimes)) +
@@ -140,7 +265,7 @@ ggplot(data=SurvData_i, aes(x=obsTimes)) +
   scale_fill_manual(name = "Standard Error",
                     values =c("Greenwood" = "red", "Nelson-Aalen" = "blue")) +
   theme_light() + xlim(0, 1500) +
-  ylab('Probability') + xlab('time')
+  ylab('Probability') + xlab('time(ms)')
 
 
 
@@ -468,6 +593,12 @@ ggplot(hazrdData, aes(x=times, y=hazrd, color=Subject)) +
   ylab('hazard') + xlab('time') +  
   theme_light()
 
+ggplot(data=hazrdData[Subject=="Subject04" | Subject=="Subject"], aes(x=times)) + 
+  geom_line(aes(y=hazrd), linetype=1,color='black',alpha=0.5) + 
+  facet_wrap(.~Subject) + 
+  ylab('hazard') + xlab('time') +  
+  theme_light()
+
 
 
 # +++++++ Different Hazard +++++++++ for a specific Participant
@@ -478,8 +609,9 @@ i = 8
 i = 11 ##
 i = 12
 i = 13 ###
+i = 14
 
-i = 1
+i = 19
 
 i = i + 1
 DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
@@ -504,8 +636,46 @@ res = data.frame(Subject = sprintf("Subject%02d", i),
                  EyeR_times = i_EyeR_haz$est.grid,
                  EyeR_hazrd = i_EyeR_haz$haz.est)
 
-
 ggplot(data=res) + 
+  geom_line(aes(x=Else_times, y=Else_hazrd), linetype=1,color='red',alpha=0.5) + 
+  geom_line(aes(x=Nose_times, y=Nose_hazrd), linetype=1,color='purple',alpha=0.5) + 
+  geom_line(aes(x=EyeL_times, y=EyeL_hazrd), linetype=1,color='green',alpha=0.5) + 
+#  geom_line(aes(x=EyeR_times, y=EyeR_hazrd), linetype=1,color='blue',alpha=0.5) + 
+  facet_wrap(.~Subject) + 
+  ylab('hazard') + xlab('time') +  
+  theme_light()
+
+
+res_Res = data.frame(NULL)
+for (i in c(4, 11))
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+  
+  i_Else_haz = with(DataFraFirst_i %>% filter(Region == "Else"),
+                    muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
+  i_Nose_haz = with(DataFraFirst_i %>% filter(Region == "Nose"),
+                    muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
+  i_EyeL_haz = with(DataFraFirst_i %>% filter(Region == "EyeL"),
+                    muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
+  i_EyeR_haz = with(DataFraFirst_i %>% filter(Region == "EyeR"),
+                    muhaz(time=Duration, delta=UnCen, kern="epanechnikov", bw.grid=100))
+  
+  res = data.frame(Subject = sprintf("Subject%02d", i),
+                   Else_times = i_Else_haz$est.grid,
+                   Else_hazrd = i_Else_haz$haz.est,
+                   Nose_times = i_Nose_haz$est.grid,
+                   Nose_hazrd = i_Nose_haz$haz.est,
+                   EyeL_times = i_EyeL_haz$est.grid,
+                   EyeL_hazrd = i_EyeL_haz$haz.est,
+                   EyeR_times = i_EyeR_haz$est.grid,
+                   EyeR_hazrd = i_EyeR_haz$haz.est)
+  
+  res_Res = rbind(res_Res, res)
+}
+
+
+
+ggplot(data=res_Res) + 
   geom_line(aes(x=Else_times, y=Else_hazrd), linetype=1,color='red',alpha=0.5) + 
   geom_line(aes(x=Nose_times, y=Nose_hazrd), linetype=1,color='purple',alpha=0.5) + 
   geom_line(aes(x=EyeL_times, y=EyeL_hazrd), linetype=1,color='green',alpha=0.5) + 
@@ -513,8 +683,6 @@ ggplot(data=res) +
   facet_wrap(.~Subject) + 
   ylab('hazard') + xlab('time') +  
   theme_light()
-
-
 
 #++++++++++++++++++++++++++++++++
 # Participant-based : Is log-logistic? Is Weibull? : Hypothesis-driven !!

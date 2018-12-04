@@ -80,11 +80,12 @@ extractAIC(regobj.aft33)
 regobj.aft4 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region), dist="loglogistic")
 regobj.aft5 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         DataFraFirst$start, dist="loglogistic")
-regobj.aft6 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
-                        DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), dist="loglogistic")
+
+regobj.aft61 = survreg(survObj ~ 1 + as.factor(DataFraFirst$SUBJECTINDEX), dist="loglogistic")
 regobj.aft62 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         as.factor(DataFraFirst$SUBJECTINDEX), dist="loglogistic")
-
+regobj.aft63 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                         DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), dist="loglogistic")
 
 
 summary(regobj.aft4)
@@ -94,8 +95,10 @@ summary(regobj.aft62)
 
 extractAIC(regobj.aft4)
 extractAIC(regobj.aft5)
-extractAIC(regobj.aft6)
+
+extractAIC(regobj.aft61)
 extractAIC(regobj.aft62)
+extractAIC(regobj.aft63)
 
 summary(coxph(Surv(futime, fustat) ~ age + strata(rx), data=ovarian))
 fit.phfix3_Strata = coxph(survObj ~ 1 + + as.factor(DataFraFirst$Region) +
