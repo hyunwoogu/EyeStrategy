@@ -228,14 +228,54 @@ MedData2 %>% arrange(desc(Med)) %>%
   # geom_errorbar(aes(ymin = GWlo, ymax = GWup, fill="blue"), width = 0.2) +
   coord_flip() +
   theme_light() +
-  ylab('Median Survival Time(ms)') +
+  ylab('Survival Time(ms)') +
   theme(axis.text.y = element_text(angle = 45, hjust = 1)) +
-  ggtitle("Median Survival Time of Subjects") +
+  ggtitle("Quartiles of Survival Time by Subjects") +
+  theme(plot.title=element_text(hjust=.5, size=15))
+
+
+
+# Exp param
+ExpParams = data.frame(NULL)
+for (i in 1:29)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i) 
+  
+  numer = sum(DataFraFirst_i$Duration)
+  denom = sum(DataFraFirst_i$UnCen)
+  
+  lambda = (denom/numer)
+  SE = lambda / sqrt(sum(denom))
+  res = data.frame(Subject=sprintf("Subject%02d", i),
+                   Lambda = lambda,
+                   LambdaSE = SE)
+  ExpParams = rbind(res, ExpParams)
+}
+
+
+SurvData_i = SurvData[SurvData$Subject=="Subject04" | SurvData$Subject=="Subject14", ]
+
+
+ggplot(data=SurvData_i, aes(x=obsTimes)) +
+  geom_step(aes(y=KMsv, colour="K-M estimator"), linetype=1, alpha=0.5, show.legend=TRUE) + 
+  geom_ribbon(aes(ymin=loGW, ymax=upGW, fill="Greenwood"), alpha=0.3, show.legend=TRUE) +
+  geom_step(aes(y=NAsv, colour="exp(-(NelsonAalen))"), linetype=1, alpha=0.5, show.legend=TRUE) +
+  geom_ribbon(aes(ymin=loNA, ymax=upNA, fill="Nelson-Aalen"), alpha=0.3, show.legend=TRUE) +
+  scale_colour_manual(name = "Survival Estimates",
+                      values = c("K-M estimator"="red", "exp(-(NelsonAalen))"="blue")) +
+  facet_wrap(.~Subject, ncol = 1) + 
+  scale_fill_manual(name = "Standard Error",
+                    values =c("Greenwood" = "red", "Nelson-Aalen" = "blue")) +
+  theme_light() + xlim(0, 1500) +
+  ggtitle("Survival Curve Estimates") + 
+  ylab('Probability') + xlab('time(ms)') +
   theme(plot.title=element_text(hjust=.5, size=15))
 
 
 
 
+
+# Parametric Survival Curves
 #+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
 ## Weibull param
 weibParam = data.frame(NULL)
@@ -251,12 +291,16 @@ for (i in 1:29)
   
   SE = c(exp(-foo$scale), exp(foo$coef)) * sqrt(rev(diag(foo$var))) / sqrt(400) ## need torecompute 
   
-  res = data.frame(alpha = shape
+  res = data.frame(Subject = sprintf("Subject%02d", i),
+                   alpha = shape,
                    lambda = scale,
                    alpha_SE = SE[1],
-                   alpha_SE = SE[2]) 
-  weibParam = rbind(weibParam, c())
+                   lambda_SE = SE[2])
+  
+  weibParam = rbind(weibParam, res)
 }
+
+
 
 
 
@@ -265,7 +309,7 @@ for (i in 1:29)
 #+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
 ## Two Participants
 
-SurvData_i = SurvData[SurvData$Subject=="Subject04" | SurvData$Subject=="Subject19", ]
+SurvData_i = SurvData[SurvData$Subject=="Subject04" | SurvData$Subject=="Subject14", ]
 
 
 ggplot(data=SurvData_i, aes(x=obsTimes)) +
@@ -279,7 +323,9 @@ ggplot(data=SurvData_i, aes(x=obsTimes)) +
   scale_fill_manual(name = "Standard Error",
                     values =c("Greenwood" = "red", "Nelson-Aalen" = "blue")) +
   theme_light() + xlim(0, 1500) +
-  ylab('Probability') + xlab('time(ms)')
+  ggtitle("Survival Curve Estimates") + 
+  ylab('Probability') + xlab('time(ms)') +
+  theme(plot.title=element_text(hjust=.5, size=15))
 
 
 
@@ -308,19 +354,22 @@ names(LRtestRes) = c("LogRank", "FHp0q1", "FHp1q0")
 LRtestRes = rownames_to_column(LRtestRes, var="Participant")
 LRtestRes$Participant = sprintf("Subject%02d", as.numeric(LRtestRes$Participant))
 
-LRtestResM = melt(LRtestRes, measure.vars = c("LogRank", "FHp0q1", "FHp1q0"),
+LRtestResM = melt(LRtestRes, measure.vars = c("LogRank", "FHp1q0", "FHp0q1"),
                   variable.name="Weight")
 LRtestResM$reject = (LRtestResM$value > qchisq(.975, df=3) | LRtestResM$value < c(qchisq(.025, df=3)))
 
 ggplot(LRtestResM, aes(x=Participant, y=value, fill=Weight, alpha=reject) ) +
   geom_bar(stat="identity", position="dodge") + 
+  # scale_fill_manual(values=c("#e1e1e1", "#aeaeae", "#ff5252")) + 
   scale_alpha_manual(values = c(0.9, .3), guide = FALSE) +
   geom_hline(yintercept = c(qchisq(.025, df=3), qchisq(.975, df=3)), 
              linetype = "dashed", color='red') +
   #  annotate("text", x = 27, y= qchisq(.975, df=3), 
   #           label = paste0("Cutoff")) +
+  ggtitle("Log Rank Test Statistic by Weight and Paritipant") +
   theme_classic() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(plot.title=element_text(hjust=.5, size=15))
 
 
 ## The Lowest, The Highest
