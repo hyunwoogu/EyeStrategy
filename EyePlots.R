@@ -201,19 +201,6 @@ MedData %>% arrange(desc(Med)) %>%
   theme(plot.title=element_text(hjust=.5, size=15))
 
 
-ggplot(AFTcoeff1, aes(x=Subject, y=Estimate, color=Variable)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = Estimate-SE, ymax = Estimate+SE), width = 0.2) +
-  facet_wrap(.~Variable, ncol=1, scales = "free_y") +
-  theme_light() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-
-my_fit_summ_i$table["median"]
-quantile(my_fit_i, .25)
-
-res[indxx, "obsTimes"]
 
 MedData2 = NULL
 for (i in 1:29)
@@ -245,6 +232,31 @@ MedData2 %>% arrange(desc(Med)) %>%
   theme(axis.text.y = element_text(angle = 45, hjust = 1)) +
   ggtitle("Median Survival Time of Subjects") +
   theme(plot.title=element_text(hjust=.5, size=15))
+
+
+
+
+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
+## AFTcoeff
+
+weibSA = function(i)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i) 
+  
+  foo = survreg(Surv(Duration, UnCen) ~1, 
+                data=DataFraFirst_i, dist="weibull")
+  
+  shape = 1/foo$scale
+  scale = exp(foo$coef)
+  
+  return(scale * gamma(1 + 1/shape))
+}
+
+
+foo$scale
+
+foo$coef
+
 
 
 
