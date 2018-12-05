@@ -74,6 +74,7 @@ summary(regobj.aft3)
 DataFraFirst[DataFraFirst$SUBJECTINDEX==29, ]
 
 Surv
+exp(-4.69e-01 )
 
 summary(regobj.aft31)
 summary(regobj.aft32)
