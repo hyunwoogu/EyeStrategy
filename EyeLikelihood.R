@@ -1,6 +1,8 @@
 # Likelihood Inference 
 
 # Exponential & Weibull Survival Curve
+i = 4
+
 expSA = function(i)
 {
   DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i) 
@@ -17,7 +19,8 @@ for (i in 1:29)
   res = c(res, expSA(i))
 }
 
-foo$var
+
+write.csv(res, "ExpHeat.csv")
 
 
 weibSA = function(i)
@@ -58,7 +61,7 @@ ggplot(resDataM) + geom_bar(aes(Subject, value, fill=Estimates),
 
 ## Exponential MLE - Method1
 
-i = 13
+i = 4
 DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
 
 expMLEfinder = function(x_de, y_de, xWin, yWin)
@@ -99,8 +102,8 @@ res2= apply(res1,2,rev)
 mat.melted = melt(res2)
 ggplot(mat.melted, aes(x = Var2, y = Var1, fill = value)) + geom_tile()
 
-setwd("../Dropbox/2018Autumn/GradThesis/EyeTracking_data")
-write.csv(res1, "WeibHeat.csv")
+# setwd("../Dropbox/2018Autumn/GradThesis/EyeTracking_data")
+write.csv(res1, "ExpHeat.csv")
 
 
 
@@ -141,11 +144,18 @@ for (j in SegsY)
   }
 }
 
+warnings()
+
 res1 = matrix(res, nrow=numSliceY, ncol=numSliceX, byrow=T)
 res2= apply(res1,2,rev)
 
 mat.melted = melt(res2)
 ggplot(mat.melted, aes(x = Var2, y = Var1, fill = value)) + geom_tile()
 
-setwd("../Dropbox/2018Autumn/GradThesis/EyeTracking_data")
 write.csv(res1, "WeibHeat.csv")
+
+
+
+
+
+setwd("../Dropbox/2018Autumn/GradThesis/EyeTracking_data")

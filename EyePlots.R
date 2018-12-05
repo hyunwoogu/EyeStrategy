@@ -237,9 +237,9 @@ MedData2 %>% arrange(desc(Med)) %>%
 
 
 #+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
-## AFTcoeff
-
-weibSA = function(i)
+## Weibull param
+weibParam = data.frame(NULL)
+for (i in 1:29)
 {
   DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i) 
   
@@ -247,15 +247,17 @@ weibSA = function(i)
                 data=DataFraFirst_i, dist="weibull")
   
   shape = 1/foo$scale
-  scale = exp(foo$coef)
+  scale = exp( - foo$coef * shape)
   
-  return(scale * gamma(1 + 1/shape))
+  SE = c(exp(-foo$scale), exp(foo$coef)) * sqrt(rev(diag(foo$var))) / sqrt(400) ## need torecompute 
+  
+  res = data.frame(alpha = shape
+                   lambda = scale,
+                   alpha_SE = SE[1],
+                   alpha_SE = SE[2]) 
+  weibParam = rbind(weibParam, c())
 }
 
-
-foo$scale
-
-foo$coef
 
 
 
@@ -429,17 +431,22 @@ ggplot(AFTcoeff2, aes(x=Subject, y=Estimate, color=Variable)) +
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # No dependency over the pictures
-i = 3
+i = 4
+i = i + 1
 DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
 CountPic = data.frame(DataFraFirst_i, 
                       faceCNT=ave(rep(1,length(DataFraFirst_i$SUBJECTINDEX)),
                                   DataFraFirst_i$SUBJECTINDEX,
                                   DataFraFirst_i$filenumber,
                                   FUN = cumsum))
+CountPic$SUBJECTINDEX = sprintf("Subject%02d", i)
 
-ggplot(CountPic, aes(x=faceCNT, y=Duration, fill=as.factor(UnCen))) +
-  scale_fill_manual(values=cols, aesthetics=c("black", "red")) +
-  geom_point() + theme_light()
+ggplot(CountPic, aes(x=faceCNT, y=Duration, colour=as.factor(UnCen))) +
+  scale_colour_manual(name="Delta", values=c("black", "red")) +
+  geom_point() + xlab("# of Exposure") + facet_grid(.~SUBJECTINDEX) +
+  theme_light() 
+
+
 
 lm(Duration ~ faceCNT, CountPic ) %>% summary
 
