@@ -58,11 +58,22 @@ regobj.aft33 = survreg(survObj ~ 1 + DataFraFirst$Region +
                        DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), 
                        dist="weibull")
 
+survobj.aft = with(larynx, Surv(time=time, event=delta, type="right"));
+Regobj.aft1 = survreg(survobj.aft ~ 1, dist="weibull", data = larynx) ;
+Regobj.aft2 = survreg(survobj.aft ~ 1 + age, dist="weibull", data = larynx) ;
+Regobj.aft3 = survreg(survobj.aft ~ 1 + age + factor(stage), dist="weibull", data = larynx) ;
+summary(Regobj.aft3)
+
+exp(-6.46e-01)
 
 summary(regobj.aft1)
 test$wald
 summary(regobj.aft2)
 summary(regobj.aft3)
+
+DataFraFirst[DataFraFirst$SUBJECTINDEX==29, ]
+
+Surv
 
 summary(regobj.aft31)
 summary(regobj.aft32)
@@ -71,6 +82,9 @@ summary(regobj.aft33)
 extractAIC(regobj.aft1)
 extractAIC(regobj.aft2)
 extractAIC(regobj.aft3)
+
+
+summary(regobj.aft32)
 
 extractAIC(regobj.aft31)
 extractAIC(regobj.aft32)
