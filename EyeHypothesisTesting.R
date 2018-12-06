@@ -159,11 +159,25 @@ extractAIC(regobj.aft2_i)
 fit.phfix1 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region))
 fit.phfix2 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         DataFraFirst$start)
-fit.phfix3 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+
+fit.phfix31 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX))
 fit.phfix32 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                      as.factor(DataFraFirst$SUBJECTINDEX))
 
+fit.phfix33 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                      DataFraFirst$start +as.factor(DataFraFirst$SUBJECTINDEX))
+
+fit.phfix34 = coxph(survObj ~ 1 + as.factor(DataFraFirst$Region) +
+                      DataFraFirst$start +strata(as.factor(DataFraFirst$SUBJECTINDEX)))
+
+summary(fit.phfix34)
+extractAIC(fit.phfix34)
+summary(fit.phfix32)
+summary(fit.phfix33)
+
+extractAIC(fit.phfix32)
+extractAIC(fit.phfix33)
 
 (fit.phfix1.sum = summary(fit.phfix1))
 (fit.phfix2.sum = summary(fit.phfix2))
@@ -195,13 +209,25 @@ WALD = t(numer) %*% solve(denom) %*% numer
 1 - pchisq(q=WALD, df=2)
 
 
+C = matrix(c(1, -1, rep(0, 29),
+             0, -1, 1, rep(0, 28)), nrow=2, byrow=TRUE)
+
+numer = C %*% fit.phfix32$coefficients
+denom = C %*% fit.phfix32$var %*% t(C)
+WALD = t(numer) %*% solve(denom) %*% numer
+
+WALD
+1 - pchisq(q=WALD, df=2)
+
+
 C = matrix(c(1, -1, rep(0, 30),
              0, -1, 1, rep(0, 29)), nrow=2, byrow=TRUE)
 
-numer = C %*% fit.phfix3$coefficients
-denom = C %*% fit.phfix3$var %*% t(C)
+numer = C %*% fit.phfix33$coefficients
+denom = C %*% fit.phfix33$var %*% t(C)
 WALD = t(numer) %*% solve(denom) %*% numer
 
+WALD
 1 - pchisq(q=WALD, df=2)
 
 ggplot(DataFraFirst, aes(x=Region, y=Duration)) + geom_boxplot()

@@ -200,6 +200,10 @@ MedData %>% arrange(desc(Med)) %>%
   ggtitle("Median Survival Time of Subjects") +
   theme(plot.title=element_text(hjust=.5, size=15))
 
+DataFraFirst %>% dplyr::group_by(as.factor(SUBJECTINDEX)) %>% dplyr::summarise(Min=min(Duration)) %>% 
+  pull(Min) %>% density %>% plot
+
+
 
 
 MedData2 = NULL
@@ -234,8 +238,9 @@ MedData2 %>% arrange(desc(Med)) %>%
   theme(plot.title=element_text(hjust=.5, size=15))
 
 
-
-# Exp param
+# Parametric Survival Curves
+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
+## Exp param
 ExpParams = data.frame(NULL)
 for (i in 1:29)
 {
@@ -249,34 +254,10 @@ for (i in 1:29)
   res = data.frame(Subject=sprintf("Subject%02d", i),
                    Lambda = lambda,
                    LambdaSE = SE)
-  ExpParams = rbind(res, ExpParams)
+  ExpParams = rbind(ExpParams, res)
 }
 
 
-SurvData_i = SurvData[SurvData$Subject=="Subject04" | SurvData$Subject=="Subject14", ]
-
-
-ggplot(data=SurvData_i, aes(x=obsTimes)) +
-  geom_step(aes(y=KMsv, colour="K-M estimator"), linetype=1, alpha=0.5, show.legend=TRUE) + 
-  geom_ribbon(aes(ymin=loGW, ymax=upGW, fill="Greenwood"), alpha=0.3, show.legend=TRUE) +
-  geom_step(aes(y=NAsv, colour="exp(-(NelsonAalen))"), linetype=1, alpha=0.5, show.legend=TRUE) +
-  geom_ribbon(aes(ymin=loNA, ymax=upNA, fill="Nelson-Aalen"), alpha=0.3, show.legend=TRUE) +
-  scale_colour_manual(name = "Survival Estimates",
-                      values = c("K-M estimator"="red", "exp(-(NelsonAalen))"="blue")) +
-  facet_wrap(.~Subject, ncol = 1) + 
-  scale_fill_manual(name = "Standard Error",
-                    values =c("Greenwood" = "red", "Nelson-Aalen" = "blue")) +
-  theme_light() + xlim(0, 1500) +
-  ggtitle("Survival Curve Estimates") + 
-  ylab('Probability') + xlab('time(ms)') +
-  theme(plot.title=element_text(hjust=.5, size=15))
-
-
-
-
-
-# Parametric Survival Curves
-#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
 ## Weibull param
 weibParam = data.frame(NULL)
 for (i in 1:29)
@@ -288,6 +269,7 @@ for (i in 1:29)
   
   shape = 1/foo$scale
   scale = exp( - foo$coef * shape)
+  real_scale = exp(foo$coef)
   
   SE = c(exp(-foo$scale), exp(foo$coef)) * sqrt(rev(diag(foo$var))) / sqrt(400) ## need torecompute 
   
@@ -295,14 +277,47 @@ for (i in 1:29)
                    alpha = shape,
                    lambda = scale,
                    alpha_SE = SE[1],
-                   lambda_SE = SE[2])
+                   lambda_SE = SE[2],
+                   realScale = real_scale)
   
   weibParam = rbind(weibParam, res)
 }
 
 
+SurvData$ExpLambda = rep(ExpParams$Lambda, table(SurvData$Subject))
+SurvData$weibShape = rep(weibParam$alpha, table(SurvData$Subject))
+SurvData$weibScale = rep(weibParam$realScale, table(SurvData$Subject))
 
 
+SurvData_i$obsTimes %>% max
+
+
+
+i = 14
+SurvData_i = SurvData[SurvData$Subject==sprintf("Subject%02d", i),]
+theta = seq(1, 1500, by=1)
+ExpTheta = pexp(q= theta, rate=SurvData_i$ExpLambda)
+WeibTheta = pweibull(q=theta, shape=SurvData_i$weibShape, scale=SurvData_i$weibScale)
+YesItsData = data.frame(Theta=theta,
+                        expTheta=ExpTheta,
+                        weibTheta=WeibTheta)
+ExpLambda = SurvData_i$ExpLambda[1]
+WeibShape = SurvData_i$weibShape[1]
+weibScale = SurvData_i$weibScale[1]
+
+ggplot(SurvData_i, aes(x=obsTimes)) +
+  geom_step(aes(y=KMsv, colour="K-M estimator"), linetype=1, alpha=0.5, show.legend=TRUE) + 
+  stat_function(data=SurvData_i, fun=function(x){1-pexp(q= x, rate=ExpLambda)}, aes(colour="Exponential"), xlim=c(0,1500)) +
+  stat_function(data=SurvData_i, fun=function(x){1-pweibull(q= x, shape=WeibShape, scale=weibScale)}, aes(colour="Weibull"), xlim=c(0,1500)) +
+  #geom_line(YesItsData, aes(x=Theta, y=expTheta, colour="Exponential"), linetype=1, alpha=0.5, show.legend=TRUE) +
+  #geom_line(YesItsData, aes(x=Theta, y=weibTheta, colour="Weibull"), linetype=1, alpha=0.5, show.legend=TRUE) +
+  scale_colour_manual(name = "Survival Estimates",
+                      values = c("K-M estimator"="red", "Exponential"="blue", "Weibull"="green")) +
+  facet_wrap(.~Subject, ncol = 1) + 
+  theme_light() + xlim(0, 1500) +
+  ggtitle("Parametric Survival Curve Estimates") + 
+  ylab('Probability') + xlab('time(ms)') +
+  theme(plot.title=element_text(hjust=.5, size=15))
 
 
 
@@ -661,11 +676,14 @@ ggplot(hazrdData, aes(x=times, y=hazrd, color=Subject)) +
   ylab('hazard') + xlab('time') +  
   theme_light()
 
-ggplot(data=hazrdData[Subject=="Subject04" | Subject=="Subject"], aes(x=times)) + 
+hazrdData_i = hazrdData[hazrdData$Subject=="Subject04" | hazrdData$Subject=="Subject14",]
+
+ggplot(data=hazrdData_i, aes(x=times)) + 
   geom_line(aes(y=hazrd), linetype=1,color='black',alpha=0.5) + 
-  facet_wrap(.~Subject) + 
-  ylab('hazard') + xlab('time') +  
-  theme_light()
+  facet_wrap(.~Subject, ncol=1) + 
+  ylab('hazard') + xlab('time') +  xlim(0, 1500) +
+  theme_light() + ggtitle("Kernel Estimates of Hazard") +
+  theme(plot.title=element_text(hjust=.5, size=15))
 
 
 
@@ -892,10 +910,12 @@ for (i in unique(DataFraFirst$SUBJECTINDEX))
   strataData = rbind(strataData, strataPlotMaker(i))
 }
 
-ggplot(data=strataData, aes(x=obsTimes)) + 
+i = 14
+strataData_i = strataData %>% dplyr::filter(Subject==sprintf("Subject%02d", i))
+ggplot(data=strataData_i, aes(x=obsTimes)) + 
   geom_step(aes(y=KMsv, col=Group), linetype=1,alpha=0.9) + 
-  facet_wrap(.~Subject) + 
-  ylab('Prob?') + xlab('time') +  
+  facet_wrap(.~Subject, ncol=1) + 
+  ylab("Survival Probability") + xlab('time') +  
   theme_light()
 
 

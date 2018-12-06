@@ -66,7 +66,7 @@ ggplot(resDataM) + geom_bar(aes(Subject, value, fill=Estimates),
 
 ## Exponential MLE - Method1
 
-i = 4
+i = 14
 DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
 
 expMLEfinder = function(x_de, y_de, xWin, yWin)
