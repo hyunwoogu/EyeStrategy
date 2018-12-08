@@ -588,8 +588,8 @@ for (i in unique(DataFraFirst$SUBJECTINDEX))
 
 ## is Weibull?
 ggplot(data=is_distData, aes(x=log(obsTimes))) + 
-#  geom_line(aes(y=log(NAsv_cumh)), linetype=1,color='blue',alpha=0.5) + 
-  geom_point(aes(y=log(NAsv_cumh)), color='blue',alpha=0.5) + 
+  geom_line(aes(y=log(NAsv_cumh)), linetype=1,color='blue',alpha=0.5) + 
+#  geom_point(aes(y=log(NAsv_cumh)), color='blue',alpha=0.5) + 
   geom_abline(aes(intercept=Interccc, slope=Slopeee), color='red') +
   facet_wrap(.~Subject) + 
   ylab('Log(H)') + xlab('Log(time)') +  
@@ -606,9 +606,6 @@ ggplot(data=is_distData, aes(x=log(obsTimes))) +
   ylab('log(exp(H)-1)') + xlab('Log(time)') +  
   theme_light()
 
-
-geom_abline(mapping = NULL, data = NULL, ..., slope, intercept,
-            na.rm = FALSE, show.legend = NA)
 
 
 #++++++++++++++++++++++++
