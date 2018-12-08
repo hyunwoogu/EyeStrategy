@@ -46,11 +46,20 @@ for (i in 1:29)
 }
 
 
-## AFT 
+
+## AFT  : Weibull
+### Without Fixed Effect
 regobj.aft1 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region), dist="weibull")
 regobj.aft2 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         DataFraFirst$start, dist="weibull")
 
+summary(regobj.aft1)
+summary(regobj.aft2)
+extractAIC(regobj.aft1)
+extractAIC(regobj.aft2)
+
+
+### With Fixed Effect
 regobj.aft31 = survreg(survObj ~ 1 + as.factor(DataFraFirst$SUBJECTINDEX), dist="weibull")
 regobj.aft32 = survreg(survObj ~ 1 + DataFraFirst$Region +
                          as.factor(DataFraFirst$SUBJECTINDEX), dist="weibull")
@@ -58,70 +67,45 @@ regobj.aft33 = survreg(survObj ~ 1 + DataFraFirst$Region +
                        DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), 
                        dist="weibull")
 
-survobj.aft = with(larynx, Surv(time=time, event=delta, type="right"));
-Regobj.aft1 = survreg(survobj.aft ~ 1, dist="weibull", data = larynx) ;
-Regobj.aft2 = survreg(survobj.aft ~ 1 + age, dist="weibull", data = larynx) ;
-Regobj.aft3 = survreg(survobj.aft ~ 1 + age + factor(stage), dist="weibull", data = larynx) ;
-summary(Regobj.aft3)
-
-exp(-6.46e-01)
-
-summary(regobj.aft1)
-test$wald
-summary(regobj.aft2)
-summary(regobj.aft3)
-
-DataFraFirst[DataFraFirst$SUBJECTINDEX==29, ]
-
-Surv
-exp(-4.69e-01 )
-
-summary(regobj.aft31)
 summary(regobj.aft32)
 summary(regobj.aft33)
-
-extractAIC(regobj.aft1)
-extractAIC(regobj.aft2)
-extractAIC(regobj.aft3)
-
-
-summary(regobj.aft32)
-
-extractAIC(regobj.aft31)
 extractAIC(regobj.aft32)
 extractAIC(regobj.aft33)
 
 
+
+
+## AFT  : Log-logistic
+### Without Fixed Effect
 regobj.aft4 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region), dist="loglogistic")
 regobj.aft5 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         DataFraFirst$start, dist="loglogistic")
+summary(regobj.aft4)
+summary(regobj.aft5)
 
+
+### With Fixed Effect
 regobj.aft61 = survreg(survObj ~ 1 + as.factor(DataFraFirst$SUBJECTINDEX), dist="loglogistic")
 regobj.aft62 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                         as.factor(DataFraFirst$SUBJECTINDEX), dist="loglogistic")
 regobj.aft63 = survreg(survObj ~ 1 + as.factor(DataFraFirst$Region) +
                          DataFraFirst$start + as.factor(DataFraFirst$SUBJECTINDEX), dist="loglogistic")
 
-
-summary(regobj.aft4)
-summary(regobj.aft5)
-summary(regobj.aft6)
 summary(regobj.aft62)
-
-extractAIC(regobj.aft4)
-extractAIC(regobj.aft5)
-
-extractAIC(regobj.aft61)
+summary(regobj.aft63)
 extractAIC(regobj.aft62)
 extractAIC(regobj.aft63)
 
-summary(coxph(Surv(futime, fustat) ~ age + strata(rx), data=ovarian))
-fit.phfix3_Strata = coxph(survObj ~ 1 + + as.factor(DataFraFirst$Region) +
-                            DataFraFirst$start )
-a = summary(fit.phfix3_Strata)
-extractAIC(fit.phfix3_Strata)
-a 
 
+## Stratified test
+fit.phfix3_Strata = coxph(survObj ~ 1 + strata(as.factor(DataFraFirst$SUBJECTINDEX)) +
+                            as.factor(DataFraFirst$Region) +
+                            DataFraFirst$start )
+summary(fit.phfix3_Strata)
+extractAIC(fit.phfix3_Strata)
+ 
+
+## Baseline Hazard
 b = basehaz(fit.phfix3_Strata)
 b$hazard
 ggplot(b, aes(hazard, time)) + geom_point()
@@ -130,7 +114,7 @@ a$coefficientsZ
 
 
 
-### Each Participant
+## Each Participant
 i = 1
 i = i + 1
 DataFraFirst_i = DataFraFirst %>% dplyr::filter(SUBJECTINDEX==i)
@@ -153,6 +137,56 @@ summary(regobj.aft2_i)
 extractAIC(regobj.aft1_i)
 extractAIC(regobj.aft2_i)
 
+
+
+## AFT : comparison
+
+
+i = 14
+DataFraFirst_i = DataFraFirst %>% dplyr::filter(SUBJECTINDEX==i)
+survObj_i = Surv(time = DataFraFirst_i$Duration, 
+                 event = DataFraFirst_i$UnCen)
+
+Comp.regobj.weib = survreg(survObj_i ~ 1 + as.factor(DataFraFirst_i$Region) +
+                        DataFraFirst_i$start, dist="weibull")
+Comp.regobj.llog = survreg(survObj_i ~ 1 + as.factor(DataFraFirst_i$Region) +
+                        DataFraFirst_i$start, dist="loglogistic")
+
+summary(Comp.regobj.weib)
+summary(Comp.regobj.llog)
+extractAIC(Comp.regobj.weib)
+extractAIC(Comp.regobj.llog)
+
+
+AFTcomp = data.frame(NULL)
+for (i in 1:29)
+{
+  DataFraFirst_i = DataFraFirst %>% dplyr::filter(SUBJECTINDEX==i)
+  survObj_i = Surv(time = DataFraFirst_i$Duration, 
+                   event = DataFraFirst_i$UnCen)
+  
+  Comp.regobj.weib = survreg(survObj_i ~ 1 + as.factor(DataFraFirst_i$Region) +
+                               DataFraFirst_i$start, dist="weibull")
+  Comp.regobj.llog = survreg(survObj_i ~ 1 + as.factor(DataFraFirst_i$Region) +
+                               DataFraFirst_i$start, dist="loglogistic")
+  
+  WAIC = extractAIC(Comp.regobj.weib)[2]
+  LAIC = extractAIC(Comp.regobj.llog)[2]
+  
+  res = data.frame(Subject = sprintf("Subject%02d", i),
+                   Weibull=WAIC,
+                   LogLogistic=LAIC)
+  AFTcomp = rbind(AFTcomp, res)
+}
+
+
+AFTcompM = melt(AFTcomp, measure.vars=c("Weibull", "LogLogistic"),
+                variable.name="AIC")
+
+
+ggplot(AFTcompM, aes(x=Subject, y=value, fill=AIC), alpha=.3) + geom_bar(stat="identity",
+                                                               position="dodge") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 
 ## Cox PH
@@ -203,7 +237,7 @@ C = matrix(c(1, -1, 0, 0,
              0, -1, 1, 0), nrow=2, byrow=TRUE)
 
 numer = C %*% a$coefficients
-denom = C %*% a$ %*% t(C)
+# denom = C %*% a$ %*% t(C)
 WALD = t(numer) %*% solve(denom) %*% numer
 
 1 - pchisq(q=WALD, df=2)
@@ -311,22 +345,6 @@ ddd = 1- pweibull(support, shape=shape, scale=scale)
 lines(support, ddd, col='red')
 
 
-plot(density(DataFraFirst$Duration))
-
-
-
-
-DataFraSecond = DataFra[DataFra$count == 2, ]
-
-
-
-
-
-
-# Participant-wise 
-
-## Summary Statistics 
-
 
 
 #++++++++++++++++++++++++
@@ -377,9 +395,8 @@ ggplot(test, aes(x = Subject)) +
 
 
 
+
 ## Cox
-
-
 survobj.aft = Surv(time=DataFraFirst$Duration, 
                    event=DataFraFirst$UnCen)
 
