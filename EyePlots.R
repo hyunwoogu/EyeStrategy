@@ -684,7 +684,7 @@ ggplot(data=hazrdData_i, aes(x=times)) +
 
 i = 3 ##
 i = 4
-i = 8 
+i = 9
 i = 11 ##
 i = 12
 i = 13 ###
@@ -717,9 +717,9 @@ res = data.frame(Subject = sprintf("Subject%02d", i),
 
 ggplot(data=res) + 
   geom_line(aes(x=Else_times, y=Else_hazrd), linetype=1,color='red',alpha=0.5) + 
-  geom_line(aes(x=Nose_times, y=Nose_hazrd), linetype=1,color='purple',alpha=0.5) + 
+#  geom_line(aes(x=Nose_times, y=Nose_hazrd), linetype=1,color='purple',alpha=0.5) + 
   geom_line(aes(x=EyeL_times, y=EyeL_hazrd), linetype=1,color='green',alpha=0.5) + 
-#  geom_line(aes(x=EyeR_times, y=EyeR_hazrd), linetype=1,color='blue',alpha=0.5) + 
+  geom_line(aes(x=EyeR_times, y=EyeR_hazrd), linetype=1,color='blue',alpha=0.5) + 
   facet_wrap(.~Subject) + 
   ylab('hazard') + xlab('time') +  
   theme_light()
@@ -903,7 +903,7 @@ for (i in unique(DataFraFirst$SUBJECTINDEX))
   strataData = rbind(strataData, strataPlotMaker(i))
 }
 
-i = 14
+i = 8
 strataData_i = strataData %>% dplyr::filter(Subject==sprintf("Subject%02d", i))
 ggplot(data=strataData_i, aes(x=obsTimes)) + 
   geom_step(aes(y=KMsv, col=Group), linetype=1,alpha=0.9) + 
