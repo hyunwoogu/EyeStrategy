@@ -36,10 +36,6 @@ ggplot(DataFraFirst_explore, aes(x=start, y=Duration, color=SUBJECTINDEX)) +
 
 #++++++++++++++++++++++++
 # Survival plot by participants
-my_fit_summ_i$table
-
-head(SurvData)
-
 survPlotMaker = function(i)
 {
   DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
