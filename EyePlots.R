@@ -147,13 +147,77 @@ inx %>% length
 obs %>% length
 as.logical(inx)
 
-SurvData %>% dplyr::group_by(Subject) %>% 
+majorIndex = SurvData %>% dplyr::group_by(Subject) %>% 
   dplyr::summarise(first = survEstimates(obsTimes, 1),
                    second = survEstimates(obsTimes, 2),
                    third = survEstimates(obsTimes, 3),
                    fourth = survEstimates(obsTimes, 4),
-                   fifth = survEstimates(obsTimes, 5)) %>%
-  print(n=29)
+                   fifth = survEstimates(obsTimes, 5))
+
+SurvData %>% names
+
+
+newSurvData = data.frame(NULL)
+for (i in 1:29)
+{
+  MidRes = NULL
+  for (j in 1:5)
+  {
+    DataData = SurvData %>% dplyr::filter(Subject==sprintf("Subject%02d", i)) 
+    
+    if(is.na(majorIndex[i,j+1])) {
+      MidRes = c(MidRes, NA)
+    } else {
+      theTimeIndex = match(majorIndex[i,j+1], DataData$obsTimes)
+      MidRes = c(MidRes, paste0(round(DataData$KMsv[theTimeIndex], 2), "±", 
+                                round(DataData$GWpm[theTimeIndex], 2)))
+    }
+  }
+  
+  ResRes = data.frame(Subject = sprintf("Subject%02d", i),
+                      p100ms = MidRes[1],
+                      p200ms = MidRes[2],
+                      p300ms = MidRes[3],
+                      p400ms = MidRes[4],
+                      p500ms = MidRes[5])
+  MidRes = NULL
+  newSurvData = rbind(newSurvData, ResRes)
+}
+
+
+
+newSurvData = data.frame(NULL)
+for (i in 1:29)
+{
+  MidRes = NULL
+  for (j in 1:5)
+  {
+    DataData = SurvData %>% dplyr::filter(Subject==sprintf("Subject%02d", i)) 
+    
+    if(is.na(majorIndex[i,j+1])) {
+      MidRes = c(MidRes, NA)
+    } else {
+      theTimeIndex = match(majorIndex[i,j+1], DataData$obsTimes)
+      MidRes = c(MidRes, paste0(round(DataData$KMsv[theTimeIndex], 2), "±", 
+                                round(DataData$GWpm[theTimeIndex], 2)))
+    }
+  }
+  
+  ResRes = data.frame(Subject = sprintf("Subject%02d", i),
+                      p100ms = MidRes[1],
+                      p200ms = MidRes[2],
+                      p300ms = MidRes[3],
+                      p400ms = MidRes[4],
+                      p500ms = MidRes[5])
+  MidRes = NULL
+  newSurvData = rbind(newSurvData, ResRes)
+}
+
+
+library(dplyr)
+bind_rows(df1, setNames(df2, names(df1))) %>% 
+  arrange(k)
+
 
 #+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
 # Meds 
