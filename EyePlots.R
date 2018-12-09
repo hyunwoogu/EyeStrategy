@@ -380,6 +380,34 @@ for (i in 1:29)
 
 
 
+gDot = function(lam, al)
+{
+  element11 = -exp(lam * (-exp(-al)) - al)
+  element12 = 0
+  element21 = lam * exp(lam * (-exp(-al)) - al)
+  element22 = -exp(-al)
+  
+  return(matrix(c(element11,element12,element21,element22),
+                byrow=T, nrow=2))
+}
+
+
+
+test = gDot(foo$coef, log(foo$scale))
+test2 = test %*% foo$var %*% t(test)
+
+
+g2Dot = function(x, y)
+{
+  ele1 = gamma(1 + 1/y) * (1/y) * x^(1/y - 1)
+  ele2 = (x^(1/y) * gamma(1 + 1/y) * (log(x) + digamma(1+1/y)))/(y^2)
+  return(matrix(c(ele1, ele2), nrow=2))
+}
+
+test3 = g2Dot(2.193462e-06, 2.395816)
+t(test3) %*% test2 %*% test3
+
+
 SurvData$ExpLambda = rep(ExpParams$Lambda, table(SurvData$Subject))
 SurvData$weibShape = rep(weibParam$alpha, table(SurvData$Subject))
 SurvData$weibScale = rep(weibParam$realScale, table(SurvData$Subject))
@@ -392,7 +420,8 @@ Infor = function(Alpha, Beta)
   element12 = (-1) * digamma(2)/Beta
   element22 = Alpha^2/(Beta^2)
   
-  return(matrix(c(element11, element12, element12, element22), nrow=2, byrow=T))
+  return(matrix(c(element11, element12, element12, element22), 
+                nrow=2, byrow=T))
 }
 
 DeltaMethod = function(Alpha, Beta)
@@ -1057,7 +1086,12 @@ ggplot(data=strataData_i, aes(x=obsTimes)) +
   geom_step(aes(y=KMsv, col=Group), linetype=1,alpha=0.9) + 
   facet_wrap(.~Subject, ncol=1) + 
   ylab("Survival Probability") + xlab('time') +  
-  theme_light()
+  theme_light() +
+  theme(strip.background =element_rect(fill="dark gray"))+
+  theme(strip.text = element_text(colour = 'white', size = 12))
+  # theme(strip.text.x = element_text(, angle = 90))
+
+exp(-.002)
 
 
 
