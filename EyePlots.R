@@ -9,6 +9,8 @@ library(muhaz)
 library(plyr)
 library(parfm)
 
+
+
 #+++++++++++++++++++++++
 gg_color_hue <- function(n) {
   hues = seq(15, 375, length = n + 1)
@@ -65,18 +67,22 @@ survPlotMaker = function(i)
   up_NA = exp(- NA_cumhzd + gamma*std_NA)
   lo_NA = exp(- NA_cumhzd - gamma*std_NA)
   
+  NA_pm = gamma*exp(- NA_cumhzd)*std_NA
+  
   stderr_GW = KM_surv * sqrt(var_GW)
   up_GW = KM_surv + gamma*stderr_GW
   lo_GW = KM_surv - gamma*stderr_GW
   
-  
+  GW_pm = gamma*stderr_GW
   
   res = data.frame(Subject = sprintf("Subject%02d", indx),
                     obsTimes = obs_time,
                     Nrisk = n_risk,
                     Nevent = n_event,
                     KMsv = KM_surv,
+                    GWpm = GW_pm,
                     NAsv = NA_surv,
+                    NApm = NA_pm,
                     upNA = up_NA,
                     loNA = lo_NA,
                     upGW = up_GW,
@@ -94,7 +100,9 @@ for (i in unique(DataFraFirst$SUBJECTINDEX))
   indx = indx + 1
   SurvData = rbind(SurvData, survPlotMaker(i))
 }
-
+ 
+SurvData %>% dplyr::group_by(Subject) %>% dplyr::summarise(Until = max(obsTimes)) %>%
+  arrange(Until) %>% print(n=29)
 
 ggplot(data=SurvData, aes(x=obsTimes)) + 
   geom_step(aes(y=KMsv), linetype=1,color='red',alpha=0.5) + 
@@ -124,6 +132,28 @@ ggplot(data=SurvData, aes(x=obsTimes, color=Subject)) +
   theme(plot.title=element_text(hjust=.5, size=15))
 
 
+SurvData
+
+survEstimates = function(obs, tTime)
+{
+  inx = findInterval(obs, c(100, 200, 300, 400, 500), left.open = T) %>% diff
+  res = obs[as.logical(c(inx,0))]
+  return(res[tTime])
+}
+
+obs = SurvData %>% filter(Subject=="Subject03") %>% pull(obsTimes)
+
+inx %>% length
+obs %>% length
+as.logical(inx)
+
+SurvData %>% dplyr::group_by(Subject) %>% 
+  dplyr::summarise(first = survEstimates(obsTimes, 1),
+                   second = survEstimates(obsTimes, 2),
+                   third = survEstimates(obsTimes, 3),
+                   fourth = survEstimates(obsTimes, 4),
+                   fifth = survEstimates(obsTimes, 5)) %>%
+  print(n=29)
 
 #+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
 # Meds 
@@ -254,6 +284,7 @@ for (i in 1:29)
 }
 
 
+
 ## Weibull param
 weibParam = data.frame(NULL)
 for (i in 1:29)
@@ -280,14 +311,53 @@ for (i in 1:29)
 }
 
 
+
 SurvData$ExpLambda = rep(ExpParams$Lambda, table(SurvData$Subject))
 SurvData$weibShape = rep(weibParam$alpha, table(SurvData$Subject))
 SurvData$weibScale = rep(weibParam$realScale, table(SurvData$Subject))
 
 
-SurvData_i$obsTimes %>% max
+
+Infor = function(Alpha, Beta)
+{
+  element11 = 1/(Alpha^2) * (1+trigamma(2)+(digamma(2))^2)
+  element12 = (-1) * digamma(2)/Beta
+  element22 = Alpha^2/(Beta^2)
+  
+  return(matrix(c(element11, element12, element12, element22), nrow=2, byrow=T))
+}
+
+DeltaMethod = function(Alpha, Beta)
+{
+  element21 = Beta^(-Alpha) * log(Beta)
+  element22 = -Alpha*(Beta^(-Alpha-1))
+  
+  return(matrix(c(1,0,element21,element22), nrow=2, byrow=T))
+}
+
+weibParamRes = data.frame(NULL)
+
+for(i in 1:29)
+{
+  alpha = weibParam[i, "alpha"]
+  beta = weibParam[i, "realScale"]
+  lambda = weibParam[i, "lambda"]
+  Res = sqrt(diag(t(DeltaMethod(alpha, beta)) %*%
+                    solve(Infor(alpha, beta)) %*% 
+                    DeltaMethod(alpha, beta)))
+  res = data.frame(alphaHat = alpha,
+                   alphaSD = Res[1],
+                   lambdaHat = lambda,
+                   lambdaSD = Res[2])
+ 
+  weibParamRes = rbind(weibParamRes, res) 
+}
 
 
+
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
 i = 14
 SurvData_i = SurvData[SurvData$Subject==sprintf("Subject%02d", i),]
@@ -394,7 +464,9 @@ DataFraFirst %>% group_by(SUBJECTINDEX) %>% summarise(numCen = sum(UnCen==0)) %>
 
 i = 29
 i = 24
+i = 1
 
+i = i + 1
 DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
 my_surv_i = Surv(time=DataFraFirst_i$Duration,
                  event=DataFraFirst_i$UnCen)
@@ -419,7 +491,7 @@ obs_time[180:length(obs_time)]
 ggplot(NULL, aes(x=obs_time)) + 
   geom_step(aes(y=NA_surv), linetype=1, color='red',alpha=0.5) + 
   geom_step(aes(y=ecdfRes), linetype=1, color='blue',alpha=0.5) +
-  ylab('Probability') + xlab('time') +  
+  ylab('Probability') + xlab('time') + 
   theme_light()
 
 
