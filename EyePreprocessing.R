@@ -53,6 +53,9 @@ Region1 = c(575, 420)
 Region2 = c(865, 420)
 Region3 = c(720, 590)
 Region4 = c(720, 740)
+
+Region3 + c(80, 80)
+
 XwinSize = 160
 YwinSize = 160
 

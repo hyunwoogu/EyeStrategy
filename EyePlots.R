@@ -421,6 +421,14 @@ for(i in 1:29)
   weibParamRes = rbind(weibParamRes, res) 
 }
 
+ParamRes = cbind(formatC(ExpParams[,2], format = "e", digits = 2),
+                 formatC(ExpParams[,3], format = "e", digits = 2),
+                 formatC(weibParamRes[,1], format = "e", digits = 2),
+                 formatC(weibParamRes[,2], format = "e", digits = 2),
+                 formatC(weibParamRes[,3], format = "e", digits = 2),
+                 formatC(weibParamRes[,4], format = "e", digits = 2))
+
+write.csv(ParamRes, "ParamRes.csv")
 
 
 
