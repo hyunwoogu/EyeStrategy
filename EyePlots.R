@@ -219,7 +219,7 @@ SurvDataRes = bind_rows(newSurvData, setNames(newSurvData2, names(newSurvData)))
 warnings()
 
 setwd("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/")
-write.csv(newSurvData)
+write.csv(newSurvData2, "SurvSummary2.csv")
 
 
 
