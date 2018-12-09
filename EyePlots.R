@@ -157,7 +157,7 @@ majorIndex = SurvData %>% dplyr::group_by(Subject) %>%
 SurvData %>% names
 
 
-newSurvData = data.frame(NULL)
+newSurvData2 = data.frame(NULL)
 for (i in 1:29)
 {
   MidRes = NULL
@@ -169,8 +169,8 @@ for (i in 1:29)
       MidRes = c(MidRes, NA)
     } else {
       theTimeIndex = match(majorIndex[i,j+1], DataData$obsTimes)
-      MidRes = c(MidRes, paste0(round(DataData$KMsv[theTimeIndex], 2), "±", 
-                                round(DataData$GWpm[theTimeIndex], 2)))
+      MidRes = c(MidRes, paste0(round(DataData$NAsv[theTimeIndex], 2), "±", 
+                                round(DataData$NApm[theTimeIndex], 2)))
     }
   }
   
@@ -181,7 +181,7 @@ for (i in 1:29)
                       p400ms = MidRes[4],
                       p500ms = MidRes[5])
   MidRes = NULL
-  newSurvData = rbind(newSurvData, ResRes)
+  newSurvData2 = rbind(newSurvData2, ResRes)
 }
 
 
@@ -214,9 +214,13 @@ for (i in 1:29)
 }
 
 
-library(dplyr)
-bind_rows(df1, setNames(df2, names(df1))) %>% 
-  arrange(k)
+SurvDataRes = bind_rows(newSurvData, setNames(newSurvData2, names(newSurvData))) %>% arrange(Subject)
+
+warnings()
+
+setwd("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/")
+write.csv(newSurvData)
+
 
 
 #+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+
