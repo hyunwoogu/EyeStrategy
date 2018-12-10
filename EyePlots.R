@@ -1080,15 +1080,16 @@ for (i in unique(DataFraFirst$SUBJECTINDEX))
   strataData = rbind(strataData, strataPlotMaker(i))
 }
 
-i = 8
+i = 14
 strataData_i = strataData %>% dplyr::filter(Subject==sprintf("Subject%02d", i))
 ggplot(data=strataData_i, aes(x=obsTimes)) + 
   geom_step(aes(y=KMsv, col=Group), linetype=1,alpha=0.9) + 
   facet_wrap(.~Subject, ncol=1) + 
   ylab("Survival Probability") + xlab('time') +  
   theme_light() +
-  theme(strip.background =element_rect(fill="dark gray"))+
-  theme(strip.text = element_text(colour = 'white', size = 12))
+  theme(strip.background =element_rect(fill="#787878"))+
+  theme(strip.text = element_text(colour = 'white', size = 18)) +
+  theme(text = element_text(size=15)) 
   # theme(strip.text.x = element_text(, angle = 90))
 
 exp(-.002)
