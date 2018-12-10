@@ -122,14 +122,17 @@ ggplot(data=SurvData, aes(x=obsTimes, color=Subject)) +
   theme_light()
 
 ggplot(data=SurvData, aes(x=obsTimes, color=Subject)) +
-  geom_step(aes(y=KMsv), linetype=1, alpha=0.5) + 
+  geom_step(aes(y=KMsv), linetype=1, alpha=1) + 
   # geom_ribbon(aes(ymin=loGW, ymax=upGW), alpha=0.3) +
-  geom_step(aes(y=NAsv), linetype=1, alpha=0.5) +
+  geom_step(aes(y=NAsv), linetype=1, alpha=1) +
   # geom_ribbon(aes(ymin=loNA, ymax=upNA), alpha=0.3) +
   ylab('Probability') + xlab('time') +
   ggtitle("Product-Limit Estimates of Survival Function by Participants") +
   theme_light() +
-  theme(plot.title=element_text(hjust=.5, size=15))
+  theme(plot.title=element_text(hjust=.5, size=20)) +
+  theme(text = element_text(size=15)) 
+  # theme(strip.text.x = element_text(, angle = 90))
+
 
 
 SurvData
@@ -316,7 +319,8 @@ for (i in 1:29)
   MedData2 = rbind(MedData2, res)
 }
 
-
+setwd("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/")
+write.csv(MedData2, "MedMed.csv")
 
 
 MedData2 %>% arrange(desc(Med)) %>% 
@@ -353,6 +357,7 @@ for (i in 1:29)
 
 
 
+
 ## Weibull param
 weibParam = data.frame(NULL)
 for (i in 1:29)
@@ -378,6 +383,8 @@ for (i in 1:29)
   weibParam = rbind(weibParam, res)
 }
 
+
+weibParam
 
 
 gDot = function(lam, al)
@@ -407,6 +414,70 @@ g2Dot = function(x, y)
 test3 = g2Dot(2.193462e-06, 2.395816)
 t(test3) %*% test2 %*% test3
 
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
+
+weibParamParam = data.frame(NULL)
+for (i in 1:29)
+{
+  DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i) 
+  
+  foo = survreg(Surv(Duration, UnCen) ~1, 
+                data=DataFraFirst_i, dist="weibull")
+  
+  test = gDot(foo$coef, log(foo$scale))
+  test2 = test %*% foo$var %*% t(test)
+  
+  shape = 1/foo$scale
+  scale = exp( - foo$coef * shape)
+  
+  test3 = g2Dot(scale, shape)
+  SEE= sqrt(t(test3) %*% test2 %*% test3)
+  
+  lamSD = diag(test2)[1]
+  alSD  = diag(test2)[2]
+  
+  res = data.frame(Subject = sprintf("Subject%02d", i),
+                   alphaSE = alSD,
+                   lambdaSE = lamSD,
+                   meanSE =SEE,
+                   realScale = real_scale)
+  
+  weibParamParam = rbind(weibParamParam, res)
+}
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
+
+
+ExpParams$Lambda
+ExpParams$LambdaSE
+1/ExpParams$Lambda
+ExpParams$LambdaSE/((ExpParams$Lambda)^2)
+
+weibParam$alpha
+weibParamParam$alphaSE
+weibParam$lambda
+weibParamParam$lambdaSE
+gamma(1+1/weibParam$alpha)/(weibParam$lambda^(1/weibParam$alpha))
+weibParamParam$meanSE
+
+
+ParamRes2 = cbind(formatC(ExpParams$Lambda, format = "e", digits = 2),
+                 formatC(ExpParams$LambdaSE, format = "e", digits = 2),
+                 round(1/ExpParams$Lambda, 2),
+                 formatC(ExpParams$LambdaSE/((ExpParams$Lambda)^2), format = "e", digits = 2),
+                 formatC(weibParam$alpha, format = "e", digits = 2),
+                 formatC(weibParamParam$alphaSE, format = "e", digits = 2),
+                 formatC(weibParam$lambda, format = "e", digits = 2),
+                 formatC(weibParamParam$lambdaSE, format = "e", digits = 2),
+                 round(gamma(1+1/weibParam$alpha)/(weibParam$lambda^(1/weibParam$alpha)), 2),
+                 formatC(weibParamParam$meanSE, format = "e", digits = 2))
+
+write.csv(ParamRes2, "ParamRes2.csv")
+
+
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
 SurvData$ExpLambda = rep(ExpParams$Lambda, table(SurvData$Subject))
 SurvData$weibShape = rep(weibParam$alpha, table(SurvData$Subject))
@@ -464,7 +535,7 @@ write.csv(ParamRes, "ParamRes.csv")
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
-i = 14
+i = 4
 SurvData_i = SurvData[SurvData$Subject==sprintf("Subject%02d", i),]
 theta = seq(1, 1500, by=1)
 ExpTheta = pexp(q= theta, rate=SurvData_i$ExpLambda)
@@ -484,11 +555,18 @@ ggplot(SurvData_i, aes(x=obsTimes)) +
   #geom_line(YesItsData, aes(x=Theta, y=weibTheta, colour="Weibull"), linetype=1, alpha=0.5, show.legend=TRUE) +
   scale_colour_manual(name = "Survival Estimates",
                       values = c("K-M estimator"="red", "Exponential"="blue", "Weibull"="green")) +
-  facet_wrap(.~Subject, ncol = 1) + 
+  facet_wrap(.~Subject, ncol = 2) + 
   theme_light() + xlim(0, 1500) +
   ggtitle("Parametric Survival Curve Estimates") + 
   ylab('Probability') + xlab('time(ms)') +
-  theme(plot.title=element_text(hjust=.5, size=15))
+  theme(plot.title=element_text(hjust=.5, size=15)) + 
+  theme(strip.background =element_rect(fill="#787878"))+
+  theme(strip.text = element_text(colour = 'white', size = 18)) +
+  theme(text = element_text(size=15))  +
+  # theme(strip.text.x = element_text(, angle = 90))
+  theme(plot.title=element_text(hjust=.5, size=20))
+
+
 
 
 
@@ -511,7 +589,11 @@ ggplot(data=SurvData_i, aes(x=obsTimes)) +
   theme_light() + xlim(0, 1500) +
   ggtitle("Survival Curve Estimates") + 
   ylab('Probability') + xlab('time(ms)') +
-  theme(plot.title=element_text(hjust=.5, size=15))
+  theme(plot.title=element_text(hjust=.5, size=20)) +
+  theme(strip.background =element_rect(fill="#787878"))+
+  theme(strip.text = element_text(colour = 'white', size = 18)) +
+  theme(text = element_text(size=15)) 
+  # theme(strip.text.x = element_text(, angle = 90))
 
 
 
@@ -764,24 +846,40 @@ for (i in unique(DataFraFirst$SUBJECTINDEX))
 
 
 ## is Weibull?
-ggplot(data=is_distData, aes(x=log(obsTimes))) + 
+is_distData_i = is_distData %>%
+  dplyr::filter(Subject=="Subject04" | Subject=="Subject14")
+
+ggplot(data=is_distData_i, aes(x=log(obsTimes))) + 
   geom_line(aes(y=log(NAsv_cumh)), linetype=1,color='blue',alpha=0.5) + 
 #  geom_point(aes(y=log(NAsv_cumh)), color='blue',alpha=0.5) + 
   geom_abline(aes(intercept=Interccc, slope=Slopeee), color='red') +
-  facet_wrap(.~Subject) + 
+  facet_wrap(.~Subject, ncol=2) + 
   ylab('Log(H)') + xlab('Log(time)') +  
-  theme_light()
+  theme_light() + 
+  theme(strip.background =element_rect(fill="#787878"))+
+  theme(strip.text = element_text(colour = 'white', size = 18)) +
+  theme(text = element_text(size=15))  +
+  # theme(strip.text.x = element_text(, angle = 90))
+  ggtitle("Diagnostic of Weibull Assumption") +
+  theme(plot.title=element_text(hjust=.5, size=20))
+
 
 
 
 
 ## is Log-Logistic?
-ggplot(data=is_distData, aes(x=log(obsTimes))) + 
+ggplot(data=is_distData_i, aes(x=log(obsTimes))) + 
   geom_line(aes(y=log(exp(NAsv_cumh)-1)), linetype=1,color='blue',alpha=0.5) + 
   geom_abline(aes(intercept=Linter, slope=Lsploe), color='red') +
   facet_wrap(.~Subject) + 
   ylab('log(exp(H)-1)') + xlab('Log(time)') +  
-  theme_light()
+  theme_light()+ 
+  theme(strip.background =element_rect(fill="#787878"))+
+  theme(strip.text = element_text(colour = 'white', size = 18)) +
+  theme(text = element_text(size=15))  +
+  # theme(strip.text.x = element_text(, angle = 90))
+  ggtitle("Diagnostic of Log-Logistic Assumption") +
+  theme(plot.title=element_text(hjust=.5, size=20))
 
 
 
@@ -842,9 +940,15 @@ ggplot(data=hazrdData, aes(x=times)) +
   theme_light()
 
 ggplot(hazrdData, aes(x=times, y=hazrd, color=Subject)) +
-  geom_line(linetype=1, alpha=0.5) +
+  geom_line(linetype=1, alpha=1) +
   ylab('hazard') + xlab('time') +  
-  theme_light()
+  theme_light() +
+  theme(text = element_text(size=15))  +
+  # theme(strip.text.x = element_text(, angle = 90))
+  ggtitle("Kernel Hazard Estimates by Subject") +
+  theme(plot.title=element_text(hjust=.5, size=20))
+
+
 
 hazrdData_i = hazrdData[hazrdData$Subject=="Subject04" | hazrdData$Subject=="Subject14",]
 
@@ -853,7 +957,12 @@ ggplot(data=hazrdData_i, aes(x=times)) +
   facet_wrap(.~Subject, ncol=1) + 
   ylab('hazard') + xlab('time') +  xlim(0, 1500) +
   theme_light() + ggtitle("Kernel Estimates of Hazard") +
-  theme(plot.title=element_text(hjust=.5, size=15))
+  theme(plot.title=element_text(hjust=.5, size=15))  +
+  theme(strip.background =element_rect(fill="#787878"))+
+  theme(strip.text = element_text(colour = 'white', size = 18)) +
+  theme(text = element_text(size=15))  +
+  # theme(strip.text.x = element_text(, angle = 90))
+  theme(plot.title=element_text(hjust=.5, size=20))
 
 
 
@@ -1089,8 +1198,10 @@ ggplot(data=strataData_i, aes(x=obsTimes)) +
   theme_light() +
   theme(strip.background =element_rect(fill="#787878"))+
   theme(strip.text = element_text(colour = 'white', size = 18)) +
-  theme(text = element_text(size=15)) 
+  theme(text = element_text(size=15))  +
   # theme(strip.text.x = element_text(, angle = 90))
+  ggtitle("KM Estimates by ROI S#14") +
+  theme(plot.title=element_text(hjust=.5, size=20))
 
 exp(-.002)
 
