@@ -96,6 +96,9 @@ summary(regobj.aft63)
 extractAIC(regobj.aft62)
 extractAIC(regobj.aft63)
 
+exp(-.22)
+exp(-.19)
+exp(-.25)
 
 ## Stratified test
 fit.phfix3_Strata = coxph(survObj ~ 1 + strata(as.factor(DataFraFirst$SUBJECTINDEX)) +

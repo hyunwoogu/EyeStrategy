@@ -8,7 +8,7 @@ library(KMsurv)
 library(muhaz)
 library(plyr)
 library(parfm)
-
+library(reshape2)
 
 
 #+++++++++++++++++++++++
@@ -302,7 +302,7 @@ DataFraFirst %>% dplyr::group_by(as.factor(SUBJECTINDEX)) %>% dplyr::summarise(M
 
 
 
-
+i=29
 MedData2 = NULL
 for (i in 1:29)
 {
@@ -323,17 +323,22 @@ setwd("../Dropbox/2018Autumn/GradThesis/EyeTracking_data/")
 write.csv(MedData2, "MedMed.csv")
 
 
+MedData2$Subject =sprintf("S%0d", 29:1)
+MedData2 = MedData2[29:1,]
+
+
 MedData2 %>% arrange(desc(Med)) %>% 
   ggplot(aes(y=Med, x=Subject, color=Subject)) + 
   geom_point() + 
-  geom_errorbar(aes(ymin = FirstQuant, ymax = ThirdQuant, color=Subject), width=.2, alpha=.7) +
+  geom_errorbar(aes(ymin = FirstQuant, ymax = ThirdQuant, color=Subject), width=.2, alpha=1) +
   # geom_errorbar(aes(ymin = GWlo, ymax = GWup, fill="blue"), width = 0.2) +
   coord_flip() +
   theme_light() +
   ylab('Survival Time(ms)') +
   theme(axis.text.y = element_text(angle = 45, hjust = 1)) +
   ggtitle("Quartiles of Survival Time by Subjects") +
-  theme(plot.title=element_text(hjust=.5, size=15))
+  theme(plot.title=element_text(hjust=.5, size=20)) +
+  theme(text = element_text(size=15)) 
 
 
 # Parametric Survival Curves
@@ -673,13 +678,48 @@ NA_surv = exp(-NA_cumhzd)
 DurECDF = ecdf(DataFraFirst_i$Duration)
 ecdfRes = 1 - DurECDF(obs_time)
 
+
 obs_time[180:length(obs_time)]
 
 ggplot(NULL, aes(x=obs_time)) + 
   geom_step(aes(y=NA_surv), linetype=1, color='red',alpha=0.5) + 
   geom_step(aes(y=ecdfRes), linetype=1, color='blue',alpha=0.5) +
   ylab('Probability') + xlab('time') + 
-  theme_light()
+  theme_light() +
+  theme(text = element_text(size=15))  +
+  ggtitle("Comparison of CCDF and KM estimates in S#29") +
+  theme(plot.title=element_text(hjust=.5, size=20))
+
+1 - DurECDF(1383)
+quantile(my_fit_i, c(.2, .4, .6, .8, 1.0))
+
+DataFraFirst %>% dplyr::filter(SUBJECTINDEX==29) %>% pull(UnCen) %>% sum
+
+DataFraFirst %>% dplyr::group_by(SUBJECTINDEX) %>%
+  dplyr::summarise(EE = min(Duration)) %>% pull(EE) %>% max
+
+exp(-.08)
+exp(-.11)
+exp(1.54)
+exp(-.09)
+exp(.08)
+exp(-.10)
+exp(.90)
+
+1 - pchisq(35.130099, 3)
+LRtestRes
+i = 29
+DataFraFirst_i = DataFraFirst %>% filter(SUBJECTINDEX==i)
+my_surv_i = Surv(time=DataFraFirst_i$Duration,
+                 event=DataFraFirst_i$UnCen)
+my_fit_i  = survfit(formula = my_surv_i ~ 1, data=my_surv_i)
+
+res = data.frame(Subject = sprintf("Subject%02d", i),
+                 FirstQuant = quantile(my_fit_i, c(.25, .5, .75))$quantile[1],
+                 Med = quantile(my_fit_i, c(.25, .5, .75))$quantile[2],
+                 ThirdQuant = quantile(my_fit_i, c(.25, .5, .75))$quantile[3])
+
+MedData2 = rbind(MedData2, res)
 
 
 #+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+#+

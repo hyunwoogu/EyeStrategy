@@ -82,6 +82,10 @@ expMLEfinder = function(x_de, y_de, xWin, yWin)
   return(numer/denom)
 }
 
+exp(.11)
+exp(.09)
+exp(.10)
+
 numSliceX = 50
 numSliceY = 50
 
