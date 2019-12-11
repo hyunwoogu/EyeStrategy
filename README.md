@@ -1,7 +1,8 @@
-# EyeStrategy: RL modeling of eye movement strategy on others' faces
+# EyeStrategy: A sequential modeling of eye movement strategy on others' faces
 
-A project for the graduation thesis @ SNU Psychology.
+A project for the graduation thesis @ SNU Psychology. Now the final paper is available as follows:
 
+[Gist perception in faces: paths rather than positions](https://www.dropbox.com/s/cnpdok10q8swjet/GistPerceptionInFaces.pdf?dl=1)
 
 ### EDA 
 
@@ -13,4 +14,5 @@ A survival analysis approach on the first fixation duration on the facial stimul
 
 ### EyeSequential
 
-A sequential decision-making based modeling of eye movement strategy on others' faces. A CNN model that reflects an attention span is implemented. 
+A sequential decision-making based modeling of eye movement strategy on others' faces. A CNN-RNN hybrid model that reflects an attention span is implemented. 
+
